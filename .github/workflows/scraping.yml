@@ -1,7 +1,7 @@
 name: Coletor de Seguidores Diário
 on:
   schedule:
-    - cron: '0 5 * * *'  # Executa todos os dias às 5:00 UTC
+    - cron: '0 12 * * *'  # Executa todos os dias às 5:00 UTC
   workflow_dispatch:  # Permite execução manual
 
 # Definir permissões necessárias para commits
@@ -25,7 +25,7 @@ jobs:
         
       - name: Instalar dependências
         run: |
-          pip install selenium webdriver-manager pandas openpyxl
+          pip install selenium webdriver-manager pandas openpyxl pyyaml
           
       - name: Verificar ambiente
         run: |
@@ -33,20 +33,8 @@ jobs:
           echo "Conteúdo do diretório: $(ls -la)"
           echo "Versão do Chrome: $(chrome --version)"
           
-      - name: Verificar existência do arquivo de configuração
-        run: |
-          if [ ! -f "config.xlsx" ]; then
-            echo "Aviso: Arquivo config.xlsx não encontrado!"
-            # Criar um arquivo config.xlsx básico para teste
-            echo "Criando arquivo config.xlsx básico para teste"
-            python -c "import pandas as pd; pd.DataFrame({'nome_pagina': ['Teste'], 'url': ['https://www.linkedin.com/company/tereos/'], 'xpath': ['//*[@class=\"org-top-card-summary__follower-count\"]']}).to_excel('config.xlsx', index=False)"
-          else
-            echo "Arquivo config.xlsx encontrado!"
-          fi
-          
       - name: Executar script de coleta
         run: |
-          # Executar com mais tempo de timeout
           python scraper.py
           
       - name: Configurar Git para commit
@@ -56,16 +44,9 @@ jobs:
           
       - name: Commit e push dos novos dados
         run: |
-          # Verificar se o arquivo de resultados existe
-          if [ -f "resultados.xlsx" ]; then
-            git add resultados.xlsx
-            git commit -m "Atualização diária de dados [$(date)]" || echo "Sem alterações para commit"
-            git push
-          else
-            echo "Arquivo resultados.xlsx não foi gerado!"
-            echo "Criando arquivo vazio para garantir que o workflow não falhe"
-            python -c "import pandas as pd; pd.DataFrame(columns=['data', 'nome', 'seguidores']).to_excel('resultados.xlsx', index=False)"
-            git add resultados.xlsx
-            git commit -m "Adicionando arquivo de resultados vazio [$(date)]" || echo "Sem alterações para commit"
-            git push
-          fi
+          # Adicionar todos os arquivos de resultados
+          git add resultados.xlsx
+          git add resultados.csv
+          git add relatorio.md || true
+          git commit -m "Atualização diária de dados [$(date)]" || echo "Sem alterações para commit"
+          git push
