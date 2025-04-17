@@ -1,0 +1,66 @@
+2025-04-17 19:26:08,935 - INFO - Iniciando script de coleta
+2025-04-17 19:26:08,935 - INFO - Iniciando coleta de dados
+2025-04-17 19:26:08,935 - INFO - Diretório atual: /home/runner/work/seguidores-tracker/seguidores-tracker
+2025-04-17 19:26:08,935 - INFO - Carregando dados do arquivo config.json
+2025-04-17 19:26:08,936 - INFO - Dados carregados: 2 registros
+2025-04-17 19:26:08,936 - INFO - Colunas: ['nome_pagina', 'rede', 'url', 'xpath']
+2025-04-17 19:26:08,936 - INFO - Carregando arquivo de resultados existente
+2025-04-17 19:26:08,937 - INFO - Resultados carregados: 2 registros
+2025-04-17 19:26:08,938 - INFO - Data de coleta: 2025-04-17
+2025-04-17 19:26:08,938 - INFO - Inicializando o WebDriver
+2025-04-17 19:26:08,938 - INFO - Configurando o ChromeDriver
+2025-04-17 19:26:08,938 - INFO - Usando user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0
+2025-04-17 19:26:08,938 - INFO - Tentando usar o Chrome instalado no ambiente...
+2025-04-17 19:26:16,196 - INFO - Chrome inicializado com sucesso
+2025-04-17 19:26:16,196 - INFO - Processando [1/2]: Tereos, Rede: Linkedin, URL: https://www.linkedin.com/company/tereos/
+2025-04-17 19:26:17,899 - INFO - Página carregada: https://www.linkedin.com/company/tereos/ (tentativa 1)
+2025-04-17 19:26:24,988 - INFO - Tentando lidar com cookies e popups para Linkedin
+2025-04-17 19:26:26,089 - INFO - Não encontrou ou não conseguiu fechar modal de login do LinkedIn
+2025-04-17 19:26:27,244 - INFO - Screenshot salvo em screenshots/Tereos_20250417_192627.png
+2025-04-17 19:26:27,244 - INFO - Buscando elemento com XPath: /html/body/main/section[1]/section/div/div[2]/div[1]/h3
+2025-04-17 19:26:27,263 - INFO - Texto encontrado: 'Moussy-le-Vieux, Île-de-France 298,801 followers'
+2025-04-17 19:26:27,264 - INFO - Texto para extração: 'Moussy-le-Vieux, Île-de-France 298,801 followers'
+2025-04-17 19:26:27,264 - INFO - Padrão alternativo encontrado: ([\d.,]+)\s+followers
+2025-04-17 19:26:27,264 - INFO - Seguidores extraídos com XPath original para Tereos: 298801
+2025-04-17 19:26:27,295 - INFO - HTML da página salvo em debug_Tereos.html
+2025-04-17 19:26:27,295 - INFO - Seguidores extraídos para Tereos: 298801
+2025-04-17 19:26:35,848 - INFO - Processando [2/2]: Lilly, Rede: Instagram, URL: https://www.instagram.com/lilly_brasil/
+2025-04-17 19:26:37,035 - INFO - Página carregada: https://www.instagram.com/lilly_brasil/ (tentativa 1)
+2025-04-17 19:26:45,236 - INFO - Tentando lidar com cookies e popups para Instagram
+2025-04-17 19:26:46,376 - INFO - Screenshot salvo em screenshots/Lilly_20250417_192646.png
+2025-04-17 19:26:46,376 - INFO - Buscando elemento com XPath: /html/body/div[1]/div/div/div[2]/div/div/div[1]/div[2]/div/div[1]/section/main/div/header/section/div[2]/ul/li[2]/div/button/span
+2025-04-17 19:27:01,797 - WARNING - XPath original falhou: Message: 
+Stacktrace:
+#0 0x560bb6422d0a <unknown>
+#1 0x560bb5ed35f0 <unknown>
+#2 0x560bb5f24a33 <unknown>
+#3 0x560bb5f24c21 <unknown>
+#4 0x560bb5f73274 <unknown>
+#5 0x560bb5f4a68d <unknown>
+#6 0x560bb5f70660 <unknown>
+#7 0x560bb5f4a433 <unknown>
+#8 0x560bb5f16ea3 <unknown>
+#9 0x560bb5f17b01 <unknown>
+#10 0x560bb63e7b5b <unknown>
+#11 0x560bb63eba41 <unknown>
+#12 0x560bb63cec52 <unknown>
+#13 0x560bb63ec5b4 <unknown>
+#14 0x560bb63b2f0f <unknown>
+#15 0x560bb6410db8 <unknown>
+#16 0x560bb6410f96 <unknown>
+#17 0x560bb6421b56 <unknown>
+#18 0x7f4ab309caa4 <unknown>
+#19 0x7f4ab3129c3c <unknown>
+
+2025-04-17 19:27:01,797 - INFO - Tentando métodos alternativos para encontrar o número de seguidores
+2025-04-17 19:27:01,797 - INFO - Tentando encontrar elemento alternativo para Lilly na rede Instagram
+2025-04-17 19:27:01,841 - INFO - HTML completo salvo em debug_Lilly_html.txt
+2025-04-17 19:27:01,855 - WARNING - Não foi possível encontrar elementos alternativos para Lilly
+2025-04-17 19:27:01,882 - INFO - HTML da página salvo em debug_Lilly.html
+2025-04-17 19:27:01,882 - WARNING - Não foi possível extrair número de seguidores para Lilly
+2025-04-17 19:27:09,662 - INFO - Finalizando o WebDriver
+2025-04-17 19:27:09,733 - INFO - Atualizando registro existente para Tereos em 2025-04-17
+2025-04-17 19:27:09,734 - INFO - Atualizando registro existente para Lilly em 2025-04-17
+2025-04-17 19:27:09,735 - INFO - Salvando resultados em resultados.csv
+2025-04-17 19:27:09,737 - INFO - Dados salvos em resultados.csv - 2 registros totais
+2025-04-17 19:27:09,737 - INFO - Script de coleta concluído com sucesso
