@@ -35,13 +35,14 @@ jobs:
           
       - name: Verificar existência do arquivo de configuração
         run: |
-          if [ ! -f "config.xlsx" ]; then
-            echo "Aviso: Arquivo config.xlsx não encontrado!"
-            # Criar um arquivo config.xlsx básico para teste
-            echo "Criando arquivo config.xlsx básico para teste"
-            python -c "import pandas as pd; pd.DataFrame({'nome_pagina': ['Teste'], 'url': ['https://www.linkedin.com/company/tereos/'], 'xpath': ['//*[@class=\"org-top-card-summary__follower-count\"]']}).to_excel('config.xlsx', index=False)"
+          if [ ! -f "config.json" ]; then
+            echo "Aviso: Arquivo config.json não encontrado!"
+            # Criar um arquivo config.json básico para teste
+            echo "Criando arquivo config.json básico para teste"
+            echo '[{"nome_pagina": "Teste", "rede": "LinkedIn", "url": "https://www.linkedin.com/company/tereos/", "xpath": "//*[@class=\"org-top-card-summary__follower-count\"]"}]' > config.json
+            cat config.json
           else
-            echo "Arquivo config.xlsx encontrado!"
+            echo "Arquivo config.json encontrado!"
           fi
           
       - name: Executar script de coleta
@@ -56,16 +57,27 @@ jobs:
           
       - name: Commit e push dos novos dados
         run: |
+          # Criar diretório para logs se não existir
+          mkdir -p logs
+          # Mover arquivo de log para o diretório de logs com timestamp
+          if [ -f "scraper.log" ]; then
+            mv scraper.log logs/scraper_$(date +%Y%m%d_%H%M%S).log
+          fi
+          
           # Verificar se o arquivo de resultados existe
-          if [ -f "resultados.xlsx" ]; then
-            git add resultados.xlsx
+          if [ -f "resultados.csv" ]; then
+            git add resultados.csv
+            git add logs/
+            git add screenshots/ || echo "Sem screenshots para commit"
+            git add debug_*.html || echo "Sem arquivos de debug HTML para commit"
             git commit -m "Atualização diária de dados [$(date)]" || echo "Sem alterações para commit"
             git push
           else
-            echo "Arquivo resultados.xlsx não foi gerado!"
+            echo "Arquivo resultados.csv não foi gerado!"
             echo "Criando arquivo vazio para garantir que o workflow não falhe"
-            python -c "import pandas as pd; pd.DataFrame(columns=['data', 'nome', 'seguidores']).to_excel('resultados.xlsx', index=False)"
-            git add resultados.xlsx
+            echo "data,nome,rede,seguidores" > resultados.csv
+            git add resultados.csv
+            git add logs/
             git commit -m "Adicionando arquivo de resultados vazio [$(date)]" || echo "Sem alterações para commit"
             git push
           fi
