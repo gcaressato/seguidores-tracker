@@ -1,0 +1,14 @@
+[
+  {
+    "nome_pagina": "Tereos",
+    "rede": "Linkedin",
+    "url": "https://www.linkedin.com/company/tereos/",
+    "xpath": "//*[@class=\"org-top-card-summary__follower-count\"]"
+  },
+  {
+    "nome_pagina": "Lilly",
+    "rede": "Instagram",
+    "url": "https://www.instagram.com/lilly_brasil/",
+    "xpath": "/html/body/div[1]/div/div/div[2]/div/div/div[1]/div[2]/div/div[1]/section/main/div/header/section/div[2]/ul/li[2]/div/button/span"
+  }
+]
