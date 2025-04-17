@@ -56,6 +56,7 @@ def extrair_seguidores(texto):
         r'([\d.,]+)\s+followers',  # Inglês
         r'([\d.,]+)\s+seguidores', # Português
         r'([\d.,]+)\s+abonnés',    # Francês
+        r'([\d.,]+)k',             # Formato abreviado (ex: 10.5k)
         r'([\d.,]+)\s+\w+',        # Qualquer texto após número
         r'([\d.,]+)'               # Apenas números
     ]
@@ -64,8 +65,14 @@ def extrair_seguidores(texto):
         match = re.search(pattern, texto)
         if match:
             print(f"Padrão alternativo encontrado: {pattern}")
-            seguidores = match.group(1).replace('.', '').replace(',', '')
-            return int(seguidores)
+            seguidores_str = match.group(1).replace('.', '').replace(',', '')
+            
+            # Se for um formato abreviado (ex: 10.5k)
+            if 'k' in pattern:
+                seguidores_str = seguidores_str.replace('k', '')
+                return int(float(seguidores_str) * 1000)
+                
+            return int(seguidores_str)
     
     print("Nenhum padrão de seguidores encontrado no texto")
     return None
@@ -97,6 +104,7 @@ def carregar_configuracao():
         # Criar uma configuração padrão
         config = [{
             'nome_pagina': 'Exemplo',
+            'rede': 'LinkedIn',
             'url': 'https://www.linkedin.com/company/example/',
             'xpath': '//*[@class="org-top-card-summary__follower-count"]'
         }]
@@ -128,10 +136,10 @@ def salvar_resultados(resultados_df):
         
         # Adicionar tabela Markdown
         if not ultimos_resultados.empty:
-            f.write("| Nome | Seguidores |\n")
-            f.write("|------|------------|\n")
+            f.write("| Nome | Rede | Seguidores |\n")
+            f.write("|------|------|------------|\n")
             for _, row in ultimos_resultados.iterrows():
-                f.write(f"| {row['nome']} | {row['seguidores']} |\n")
+                f.write(f"| {row['nome']} | {row['rede']} | {row['seguidores']} |\n")
         else:
             f.write("Nenhum dado coletado hoje.\n")
         
@@ -141,16 +149,22 @@ def salvar_resultados(resultados_df):
         datas_unicas = sorted(resultados_df['data'].unique(), reverse=True)[:7]
         
         if len(datas_unicas) > 0:
-            # Criar tabela para cada página com evolução nos últimos dias
-            for nome in resultados_df['nome'].unique():
-                f.write(f"\n### {nome}\n\n")
-                f.write("| Data | Seguidores |\n")
-                f.write("|------|------------|\n")
+            # Agrupar por rede social
+            for rede in resultados_df['rede'].unique():
+                f.write(f"\n### {rede}\n\n")
                 
-                for data in datas_unicas:
-                    linha = resultados_df[(resultados_df['data'] == data) & (resultados_df['nome'] == nome)]
-                    if not linha.empty:
-                        f.write(f"| {data} | {linha.iloc[0]['seguidores']} |\n")
+                # Criar tabela para cada página com evolução nos últimos dias
+                for nome in resultados_df[resultados_df['rede'] == rede]['nome'].unique():
+                    f.write(f"\n#### {nome}\n\n")
+                    f.write("| Data | Seguidores |\n")
+                    f.write("|------|------------|\n")
+                    
+                    for data in datas_unicas:
+                        linha = resultados_df[(resultados_df['data'] == data) & 
+                                             (resultados_df['nome'] == nome) & 
+                                             (resultados_df['rede'] == rede)]
+                        if not linha.empty:
+                            f.write(f"| {data} | {linha.iloc[0]['seguidores']} |\n")
         else:
             f.write("Sem dados históricos disponíveis.\n")
     
@@ -170,9 +184,14 @@ def coletar_dados():
             print("Carregando arquivo de resultados existente")
             resultados_df = pd.read_excel('resultados.xlsx')
             print(f"Resultados carregados: {len(resultados_df)} registros")
+            
+            # Verificar se o campo 'rede' existe, caso contrário adicionar
+            if 'rede' not in resultados_df.columns:
+                print("Adicionando coluna 'rede' aos resultados existentes")
+                resultados_df['rede'] = 'Desconhecida'
         else:
             print("Criando novo DataFrame de resultados")
-            resultados_df = pd.DataFrame(columns=['data', 'nome', 'seguidores'])
+            resultados_df = pd.DataFrame(columns=['data', 'nome', 'rede', 'seguidores'])
         
         # Data atual
         data_hoje = datetime.now().strftime("%Y-%m-%d")
@@ -189,10 +208,12 @@ def coletar_dados():
             for _, linha in dados.iterrows():
                 try:
                     nome_pagina = linha['nome_pagina']
+                    # Verificar se o campo 'rede' existe
+                    rede = linha['rede'] if 'rede' in linha else 'Desconhecida'
                     url = linha['url']
                     xpath = linha['xpath']
                     
-                    print(f"Processando: {nome_pagina}, URL: {url}")
+                    print(f"Processando: {nome_pagina} ({rede}), URL: {url}")
                     
                     # Acessar a URL
                     driver.get(url)
@@ -219,6 +240,7 @@ def coletar_dados():
                             novos_resultados.append({
                                 'data': data_hoje,
                                 'nome': nome_pagina,
+                                'rede': rede,
                                 'seguidores': seguidores
                             })
                         else:
@@ -227,6 +249,7 @@ def coletar_dados():
                             novos_resultados.append({
                                 'data': data_hoje,
                                 'nome': nome_pagina,
+                                'rede': rede,
                                 'seguidores': 0  # Valor padrão quando não consegue extrair
                             })
                     except Exception as e:
@@ -235,6 +258,7 @@ def coletar_dados():
                         novos_resultados.append({
                             'data': data_hoje,
                             'nome': nome_pagina,
+                            'rede': rede,
                             'seguidores': 0  # Valor padrão quando há erro
                         })
                 
@@ -255,6 +279,7 @@ def coletar_dados():
             novos_resultados.append({
                 'data': data_hoje,
                 'nome': 'sem_dados',
+                'rede': 'Desconhecida',
                 'seguidores': 0
             })
         
@@ -265,23 +290,25 @@ def coletar_dados():
         if not resultados_df.empty:
             # Para cada novo resultado...
             for _, nova_linha in novos_df.iterrows():
-                # Verificar se já existe um registro para este nome_pagina na mesma data
-                mask = (resultados_df['data'] == nova_linha['data']) & (resultados_df['nome'] == nova_linha['nome'])
+                # Verificar se já existe um registro para este nome_pagina e rede na mesma data
+                mask = ((resultados_df['data'] == nova_linha['data']) & 
+                        (resultados_df['nome'] == nova_linha['nome']) & 
+                        (resultados_df['rede'] == nova_linha['rede']))
                 
                 if mask.any():
                     # Se já existe, atualiza o valor de seguidores
-                    print(f"Atualizando registro existente para {nova_linha['nome']} em {nova_linha['data']}")
+                    print(f"Atualizando registro existente para {nova_linha['nome']} ({nova_linha['rede']}) em {nova_linha['data']}")
                     resultados_df.loc[mask, 'seguidores'] = nova_linha['seguidores']
                 else:
                     # Se não existe, adiciona a nova linha
-                    print(f"Adicionando novo registro para {nova_linha['nome']} em {nova_linha['data']}")
+                    print(f"Adicionando novo registro para {nova_linha['nome']} ({nova_linha['rede']}) em {nova_linha['data']}")
                     resultados_df = pd.concat([resultados_df, pd.DataFrame([nova_linha])], ignore_index=True)
         else:
             # Se o DataFrame de resultados estiver vazio, use os novos resultados diretamente
             resultados_df = novos_df
         
-        # Ordenar por data (mais recente primeiro) e nome
-        resultados_df = resultados_df.sort_values(['data', 'nome'], ascending=[False, True])
+        # Ordenar por data (mais recente primeiro), rede e nome
+        resultados_df = resultados_df.sort_values(['data', 'rede', 'nome'], ascending=[False, True, True])
         
         # Salvar resultados em múltiplos formatos
         salvar_resultados(resultados_df)
@@ -291,7 +318,7 @@ def coletar_dados():
         print(traceback.format_exc())
         # Garantir que o arquivo de resultados exista mesmo em caso de erro fatal
         if not os.path.exists('resultados.xlsx'):
-            df_vazio = pd.DataFrame(columns=['data', 'nome', 'seguidores'])
+            df_vazio = pd.DataFrame(columns=['data', 'nome', 'rede', 'seguidores'])
             salvar_resultados(df_vazio)
             print("Criados arquivos vazios devido a erro")
 
@@ -305,6 +332,6 @@ if __name__ == "__main__":
         print(traceback.format_exc())
         # Garantir que os arquivos de resultados existam mesmo em caso de erro fatal
         if not os.path.exists('resultados.xlsx'):
-            df_vazio = pd.DataFrame(columns=['data', 'nome', 'seguidores'])
+            df_vazio = pd.DataFrame(columns=['data', 'nome', 'rede', 'seguidores'])
             salvar_resultados(df_vazio)
             print("Criados arquivos vazios devido a erro")
