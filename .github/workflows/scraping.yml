@@ -48,16 +48,6 @@ jobs:
         run: |
           # Executar com mais tempo de timeout
           python scraper.py
-        
-      - name: Salvar screenshots como artefatos (sempre executa)
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: screenshots-and-logs
-          path: |
-            *.png
-            *.log
-            *.xlsx
           
       - name: Configurar Git para commit
         run: |
