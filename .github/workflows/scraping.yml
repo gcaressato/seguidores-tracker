@@ -25,7 +25,7 @@ jobs:
         
       - name: Instalar dependências
         run: |
-          pip install selenium webdriver-manager pandas openpyxl
+          pip install selenium webdriver-manager pandas openpyxl selenium-stealth undetected-chromedriver
           
       - name: Verificar ambiente
         run: |
@@ -45,6 +45,11 @@ jobs:
             echo "Arquivo config.json encontrado!"
           fi
           
+      - name: Criar diretórios para logs e screenshots
+        run: |
+          mkdir -p logs
+          mkdir -p screenshots
+          
       - name: Executar script de coleta
         run: |
           # Executar com mais tempo de timeout
@@ -57,19 +62,20 @@ jobs:
           
       - name: Commit e push dos novos dados
         run: |
-          # Criar diretório para logs se não existir
-          mkdir -p logs
           # Mover arquivo de log para o diretório de logs com timestamp
           if [ -f "scraper.log" ]; then
             mv scraper.log logs/scraper_$(date +%Y%m%d_%H%M%S).log
           fi
           
+          # Arquivos HTML de debug
+          git add debug_*.html || echo "Sem arquivos de debug HTML para commit"
+          git add debug_*_html.txt || echo "Sem arquivos de debug HTML text para commit"
+          
           # Verificar se o arquivo de resultados existe
           if [ -f "resultados.csv" ]; then
             git add resultados.csv
             git add logs/
-            git add screenshots/ || echo "Sem screenshots para commit"
-            git add debug_*.html || echo "Sem arquivos de debug HTML para commit"
+            git add screenshots/
             git commit -m "Atualização diária de dados [$(date)]" || echo "Sem alterações para commit"
             git push
           else
