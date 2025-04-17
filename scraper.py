@@ -197,165 +197,202 @@ def tirar_screenshot(driver, nome_pagina):
 def extrair_seguidores_instagram_api(username):
     """
     Extrai o número de seguidores do Instagram usando a API não documentada.
-    Esta abordagem evita completamente os bloqueios de automação da interface web.
+    Implementa retry para lidar com limitação de taxa (429).
     """
     logging.info(f"Tentando extrair seguidores via API JSON para: {username}")
     
-    try:
-        # Criar uma sessão para manter cookies e headers consistentes
-        session = requests.Session()
-        
-        # Configurar headers para parecer um navegador real
-        user_agents = [
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15"
-        ]
-        chosen_user_agent = random.choice(user_agents)
-        
-        headers = {
-            'User-Agent': chosen_user_agent,
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5'
-        }
-        
-        # Configurar a sessão com os headers
-        session.headers.update(headers)
-        
-        # 1. Primeiro, fazemos uma requisição inicial à página para obter cookies
-        url_inicial = f"https://www.instagram.com/{username}/"
-        logging.info(f"Fazendo requisição inicial para {url_inicial}")
-        
-        response_inicial = session.get(url_inicial, timeout=15)
-        
-        if response_inicial.status_code != 200:
-            logging.info(f"Falha na requisição inicial. Status code: {response_inicial.status_code}")
-            return None
-        
-        # 2. Extrair o AppID e outras informações do HTML
-        html = response_inicial.text
-        
-        # Procurar pelo ID do usuário e outros dados no HTML
-        shared_data_match = re.search(r'window\._sharedData\s*=\s*({.*?});</script>', html)
-        additional_data_match = re.search(r'window\.__additionalDataLoaded\s*\(\s*[\'"].*?[\'"]\s*,\s*({.*?})\);</script>', html)
-        
-        # Tentar extrair dados da resposta
-        user_data = None
-        
-        # Método 1: Verificar os dados compartilhados (mais comum)
-        if shared_data_match:
-            try:
-                shared_data = json.loads(shared_data_match.group(1))
-                entry_data = shared_data.get('entry_data', {})
-                profile_page = entry_data.get('ProfilePage', [{}])[0]
-                user_data = profile_page.get('graphql', {}).get('user', {})
-                
-                if user_data:
-                    logging.info("Dados extraídos via window._sharedData")
-            except json.JSONDecodeError:
-                logging.info("Erro ao decodificar JSON de window._sharedData")
-        
-        # Método 2: Verificar dados adicionais (alternativa)
-        if not user_data and additional_data_match:
-            try:
-                additional_data = json.loads(additional_data_match.group(1))
-                user_data = additional_data.get('user', {})
-                
-                if user_data:
-                    logging.info("Dados extraídos via window.__additionalDataLoaded")
-            except json.JSONDecodeError:
-                logging.info("Erro ao decodificar JSON de window.__additionalDataLoaded")
-        
-        # Método 3: Buscar uma API alternativa no HTML
-        if not user_data:
-            # Buscar qualquer JSON que contenha dados do usuário
-            json_data_matches = re.findall(r'<script[^>]*type=[\'"](text|application)/json[\'"][^>]*>([^<]+)</script>', html)
-            
-            for match_type, json_content in json_data_matches:
-                try:
-                    data = json.loads(json_content)
-                    
-                    # Procurar por estruturas conhecidas que contêm dados do usuário
-                    if 'user' in data:
-                        user_data = data['user']
-                        logging.info("Dados extraídos via script JSON")
-                        break
-                    elif 'data' in data and 'user' in data['data']:
-                        user_data = data['data']['user']
-                        logging.info("Dados extraídos via script JSON (data.user)")
-                        break
-                except:
-                    continue
-        
-        # 3. Extrair o número de seguidores se encontramos os dados do usuário
-        if user_data:
-            # Tentar diferentes caminhos para encontrar a contagem de seguidores
-            followers_count = None
-            
-            # Caminho 1 (mais comum)
-            if 'edge_followed_by' in user_data:
-                followers_count = user_data['edge_followed_by'].get('count')
-                
-            # Caminho 2 (alternativo)
-            elif 'followed_by' in user_data:
-                followers_count = user_data['followed_by'].get('count')
-                
-            # Caminho 3 (para dados em formato diferente)
-            elif 'follower_count' in user_data:
-                followers_count = user_data['follower_count']
-                
-            # Se encontrarmos, retornamos o valor
-            if followers_count is not None:
-                logging.info(f"✅ Seguidores encontrados via API JSON: {followers_count}")
-                return followers_count
-        
-        # 4. Se ainda não encontramos, tentar uma requisição direta à API GraphQL
+    # Número máximo de tentativas para contornar limite de taxa
+    max_retries = 3
+    
+    for tentativa in range(max_retries):
         try:
-            # Requisitar a API GraphQL não documentada
-            profile_api_url = f"https://www.instagram.com/api/v1/users/web_profile_info/?username={username}"
+            if tentativa > 0:
+                # Aguarda tempo progressivo entre tentativas (1s, 3s, 7s)
+                wait_time = (2 ** tentativa) - 1
+                logging.info(f"Aguardando {wait_time}s antes da tentativa {tentativa+1}")
+                time.sleep(wait_time)
             
-            # Adicionar headers específicos que a API requer
-            api_headers = headers.copy()
-            api_headers['X-IG-App-ID'] = '936619743392459'  # ID público usado por todos os navegadores
-            api_headers['X-Requested-With'] = 'XMLHttpRequest'
+            # Criar uma sessão para manter cookies e headers consistentes
+            session = requests.Session()
             
-            response_api = session.get(profile_api_url, headers=api_headers, timeout=10)
+            # Configurar headers para parecer um navegador real
+            user_agents = [
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0"
+            ]
+            chosen_user_agent = random.choice(user_agents)
             
-            if response_api.status_code == 200:
-                api_data = response_api.json()
-                user_info = api_data.get('data', {}).get('user', {})
+            headers = {
+                'User-Agent': chosen_user_agent,
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Cache-Control': 'max-age=0',
+                # Adiciona Referer para parecer navegação normal
+                'Referer': 'https://www.instagram.com/',
+                # Headers adicionais para evitar detecção
+                'sec-ch-ua': '"Chromium";v="125", "Google Chrome";v="125"',
+                'sec-ch-ua-mobile': '?0',
+                'sec-ch-ua-platform': '"Windows"',
+                'Upgrade-Insecure-Requests': '1'
+            }
+            
+            # Configurar a sessão com os headers
+            session.headers.update(headers)
+            
+            # 1. Tenta primeiro API GraphQL (mais direto e menos propenso a bloqueios)
+            try:
+                profile_api_url = f"https://www.instagram.com/api/v1/users/web_profile_info/?username={username}"
                 
-                if user_info:
-                    # Tentar diferentes caminhos novamente
-                    if 'edge_followed_by' in user_info:
-                        followers_count = user_info['edge_followed_by'].get('count')
-                    elif 'followed_by_count' in user_info:
-                        followers_count = user_info['followed_by_count']
+                # Headers específicos para API
+                api_headers = headers.copy()
+                api_headers['X-IG-App-ID'] = '936619743392459'  # ID público usado por browsers
+                api_headers['X-Requested-With'] = 'XMLHttpRequest'
+                api_headers['origin'] = 'https://www.instagram.com'
+                api_headers['accept'] = '*/*'
+                
+                response_api = session.get(profile_api_url, headers=api_headers, timeout=12)
+                
+                if response_api.status_code == 200:
+                    api_data = response_api.json()
+                    user_info = api_data.get('data', {}).get('user', {})
                     
-                    if followers_count is not None:
-                        logging.info(f"✅ Seguidores encontrados via API GraphQL: {followers_count}")
-                        return followers_count
+                    if user_info:
+                        # Busca em múltiplos caminhos possíveis
+                        followers_count = None
+                        
+                        if 'edge_followed_by' in user_info:
+                            followers_count = user_info['edge_followed_by'].get('count')
+                        elif 'followed_by_count' in user_info:
+                            followers_count = user_info['followed_by_count']
+                        
+                        if followers_count is not None:
+                            logging.info(f"✅ Seguidores encontrados via API GraphQL: {followers_count}")
+                            return followers_count
+                
+                if response_api.status_code == 429:
+                    logging.info(f"API GraphQL retornou 429 (Rate Limit). Tentativa {tentativa+1}/{max_retries}")
+                    continue  # Tenta novamente após espera
+                    
+            except Exception as e:
+                logging.info(f"Erro ao acessar API GraphQL: {str(e)[:50]}")
+            
+            # 2. Se API GraphQL falhar, tenta método alternativo com página HTML
+            url_inicial = f"https://www.instagram.com/{username}/"
+            logging.info(f"Fazendo requisição para página HTML: {url_inicial}")
+            
+            # Adiciona delay para simular comportamento humano
+            time.sleep(random.uniform(1, 2))
+            
+            response_inicial = session.get(url_inicial, timeout=15)
+            
+            if response_inicial.status_code == 429:
+                logging.info(f"Requisição HTML retornou 429 (Rate Limit). Tentativa {tentativa+1}/{max_retries}")
+                continue  # Tenta novamente após espera
+            
+            if response_inicial.status_code != 200:
+                logging.info(f"Falha na requisição HTML. Status code: {response_inicial.status_code}")
+                continue
+            
+            # 3. Extrair dados do HTML
+            html = response_inicial.text
+            
+            # Procurar pelo ID do usuário e outros dados no HTML
+            shared_data_match = re.search(r'window\._sharedData\s*=\s*({.*?});</script>', html)
+            additional_data_match = re.search(r'window\.__additionalDataLoaded\s*\(\s*[\'"].*?[\'"]\s*,\s*({.*?})\);</script>', html)
+            
+            # Tentar extrair dados da resposta
+            user_data = None
+            
+            # Método 1: Verificar os dados compartilhados (mais comum)
+            if shared_data_match:
+                try:
+                    shared_data = json.loads(shared_data_match.group(1))
+                    entry_data = shared_data.get('entry_data', {})
+                    profile_page = entry_data.get('ProfilePage', [{}])[0]
+                    user_data = profile_page.get('graphql', {}).get('user', {})
+                    
+                    if user_data:
+                        logging.info("Dados extraídos via window._sharedData")
+                except json.JSONDecodeError:
+                    logging.info("Erro ao decodificar JSON de window._sharedData")
+            
+            # Método 2: Verificar dados adicionais
+            if not user_data and additional_data_match:
+                try:
+                    additional_data = json.loads(additional_data_match.group(1))
+                    user_data = additional_data.get('user', {})
+                    
+                    if user_data:
+                        logging.info("Dados extraídos via window.__additionalDataLoaded")
+                except json.JSONDecodeError:
+                    logging.info("Erro ao decodificar JSON de window.__additionalDataLoaded")
+            
+            # 4. Extrair o número de seguidores se encontramos os dados do usuário
+            if user_data:
+                followers_count = None
+                
+                if 'edge_followed_by' in user_data:
+                    followers_count = user_data['edge_followed_by'].get('count')
+                elif 'followed_by' in user_data:
+                    followers_count = user_data['followed_by'].get('count')
+                elif 'follower_count' in user_data:
+                    followers_count = user_data['follower_count']
+                
+                if followers_count is not None:
+                    logging.info(f"✅ Seguidores encontrados via HTML: {followers_count}")
+                    return followers_count
+            
+            # 5. Método de fallback: procura diretamente por números próximos a 'seguidores'/'followers' no HTML
+            try:
+                # Busca padrões como "5,418 seguidores" ou "5.418 followers"
+                follower_patterns = [
+                    r'([\d,.]+)\s*(?:seguidores|followers)',
+                    r'(?:seguidores|followers)\s*(?:\(\s*)?([\d,.]+)(?:\s*\))?',
+                    r'(?:"followerCount":|"edge_followed_by":.*?"count":)\s*(\d+)'
+                ]
+                
+                for pattern in follower_patterns:
+                    matches = re.findall(pattern, html)
+                    for match in matches:
+                        try:
+                            # Remove caracteres não numéricos exceto para separadores
+                            follower_text = match.strip()
+                            # Substitui separadores por vazio
+                            follower_num = follower_text.replace(',', '').replace('.', '')
+                            followers_count = int(follower_num)
+                            
+                            if 1 <= followers_count <= 1000000000:  # Limite razoável
+                                logging.info(f"✅ Seguidores extraídos por regex: {followers_count}")
+                                return followers_count
+                        except (ValueError, TypeError):
+                            continue
+            except Exception as e:
+                logging.info(f"Erro na extração por regex: {str(e)[:50]}")
+            
+            # Se chegou aqui, falhou em todas as tentativas nesta rodada
+            logging.info(f"Tentativa {tentativa+1}/{max_retries} falhou")
+            
         except Exception as e:
-            logging.info(f"Erro ao acessar API GraphQL: {str(e)}")
-        
-        logging.info("❌ Não foi possível extrair o número de seguidores via API JSON")
-        return None
-        
-    except Exception as e:
-        logging.info(f"❌ Erro ao extrair seguidores via API JSON: {str(e)}")
-        return None
+            logging.info(f"❌ Erro na tentativa {tentativa+1}: {str(e)[:100]}")
+    
+    logging.info("❌ Todas as tentativas de API JSON falharam")
+    return None
 
 
 def extrair_seguidores_instagram_alternativo(driver, xpath, nome_pagina):
     """
     Função adaptadora que tenta usar a API JSON e, se falhar, recorre aos métodos anteriores.
     """
-    # Extrair nome de usuário da URL
-    username = nome_pagina.lower()
-    
-    # Se o nome_pagina não for o username exato, tenta extrair da URL
-    match = re.search(r'instagram\.com/([^/]+)', nome_pagina)
+    # Extrai o nome de usuário correto da URL ou do nome da página
+    match = re.search(r'instagram\.com/([^/?#]+)', nome_pagina)
     if match:
         username = match.group(1)
+    else:
+        # Se não for uma URL, usa o nome_pagina diretamente
+        username = nome_pagina
+    
+    logging.info(f"Nome de usuário extraído: {username}")
     
     # Primeiro, tenta o método da API JSON (não usa o driver)
     seguidores = extrair_seguidores_instagram_api(username)
@@ -367,7 +404,6 @@ def extrair_seguidores_instagram_alternativo(driver, xpath, nome_pagina):
     # Se falhar, recorre aos métodos originais baseados em Selenium
     logging.info(f"API JSON falhou, tentando métodos baseados em Selenium para {nome_pagina}")
     return extrair_seguidores_instagram(driver, xpath, nome_pagina)
-
 def extrair_seguidores_instagram_method1(driver, xpath):
     """Método 1: Usando o XPath fornecido."""
     try:
