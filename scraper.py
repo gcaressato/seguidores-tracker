@@ -11,6 +11,8 @@ from webdriver_manager.chrome import ChromeDriverManager
 import time
 import os
 import random
+import json
+import yaml
 from datetime import datetime
 import traceback
 
@@ -37,7 +39,6 @@ def configurar_driver():
 
 def extrair_seguidores(texto):
     """Extrai o número de seguidores do texto"""
-    # Imprime o texto para debugging
     print(f"Texto para extração: '{texto}'")
     
     # Pattern para encontrar números seguidos pela palavra "seguidores"
@@ -69,49 +70,117 @@ def extrair_seguidores(texto):
     print("Nenhum padrão de seguidores encontrado no texto")
     return None
 
+def carregar_configuracao():
+    """Carrega a configuração do arquivo config.json, config.yaml ou config.xlsx"""
+    # Tentar carregar de config.json primeiro
+    if os.path.exists('config.json'):
+        print("Carregando configuração de config.json")
+        with open('config.json', 'r', encoding='utf-8') as f:
+            config = json.load(f)
+            return pd.DataFrame(config)
+    
+    # Tentar carregar de config.yaml em seguida
+    elif os.path.exists('config.yaml') or os.path.exists('config.yml'):
+        yaml_file = 'config.yaml' if os.path.exists('config.yaml') else 'config.yml'
+        print(f"Carregando configuração de {yaml_file}")
+        with open(yaml_file, 'r', encoding='utf-8') as f:
+            config = yaml.safe_load(f)
+            return pd.DataFrame(config)
+    
+    # Finalmente, tentar carregar de config.xlsx
+    elif os.path.exists('config.xlsx'):
+        print("Carregando configuração de config.xlsx")
+        return pd.read_excel('config.xlsx')
+    
+    else:
+        print("Nenhum arquivo de configuração encontrado (config.json, config.yaml, config.xlsx)")
+        # Criar uma configuração padrão
+        config = [{
+            'nome_pagina': 'Exemplo',
+            'url': 'https://www.linkedin.com/company/example/',
+            'xpath': '//*[@class="org-top-card-summary__follower-count"]'
+        }]
+        
+        # Salvar como JSON para uso futuro
+        with open('config.json', 'w', encoding='utf-8') as f:
+            json.dump(config, f, ensure_ascii=False, indent=2)
+        
+        print("Arquivo config.json padrão criado")
+        return pd.DataFrame(config)
+
+def salvar_resultados(resultados_df):
+    """Salva os resultados em múltiplos formatos"""
+    # Salvar em Excel
+    print("Salvando resultados em resultados.xlsx")
+    resultados_df.to_excel('resultados.xlsx', index=False)
+    
+    # Salvar em CSV
+    print("Salvando resultados em resultados.csv")
+    resultados_df.to_csv('resultados.csv', index=False)
+    
+    # Salvar últimos resultados como uma tabela Markdown
+    print("Salvando últimos resultados em relatorio.md")
+    data_hoje = datetime.now().strftime("%Y-%m-%d")
+    ultimos_resultados = resultados_df[resultados_df['data'] == data_hoje]
+    
+    with open('relatorio.md', 'w', encoding='utf-8') as f:
+        f.write(f"# Relatório de Seguidores - {data_hoje}\n\n")
+        
+        # Adicionar tabela Markdown
+        if not ultimos_resultados.empty:
+            f.write("| Nome | Seguidores |\n")
+            f.write("|------|------------|\n")
+            for _, row in ultimos_resultados.iterrows():
+                f.write(f"| {row['nome']} | {row['seguidores']} |\n")
+        else:
+            f.write("Nenhum dado coletado hoje.\n")
+        
+        # Adicionar histórico recente (últimos 7 dias)
+        f.write("\n## Histórico Recente\n\n")
+        # Obter datas únicas em ordem decrescente
+        datas_unicas = sorted(resultados_df['data'].unique(), reverse=True)[:7]
+        
+        if len(datas_unicas) > 0:
+            # Criar tabela para cada página com evolução nos últimos dias
+            for nome in resultados_df['nome'].unique():
+                f.write(f"\n### {nome}\n\n")
+                f.write("| Data | Seguidores |\n")
+                f.write("|------|------------|\n")
+                
+                for data in datas_unicas:
+                    linha = resultados_df[(resultados_df['data'] == data) & (resultados_df['nome'] == nome)]
+                    if not linha.empty:
+                        f.write(f"| {data} | {linha.iloc[0]['seguidores']} |\n")
+        else:
+            f.write("Sem dados históricos disponíveis.\n")
+    
+    print(f"Dados salvos em múltiplos formatos - {len(resultados_df)} registros totais")
+
 def coletar_dados():
     """Função principal para coleta de dados"""
     print("Iniciando coleta de dados")
-    print(f"Diretório atual: {os.getcwd()}")
-    
-    # Verificar se o arquivo de configuração existe
-    if not os.path.exists('config.xlsx'):
-        print("Arquivo config.xlsx não encontrado!")
-        # Criar um arquivo de resultados vazio para evitar falha no workflow
-        pd.DataFrame(columns=['data', 'nome', 'seguidores']).to_excel('resultados.xlsx', index=False)
-        print("Criado resultados.xlsx vazio")
-        return
-    
-    # Carregar dados do Excel
-    print("Carregando dados do arquivo config.xlsx")
-    try:
-        dados = pd.read_excel('config.xlsx')
-        print(f"Dados carregados: {len(dados)} registros")
-        print(f"Colunas: {dados.columns.tolist()}")
-    except Exception as e:
-        print(f"Erro ao carregar config.xlsx: {str(e)}")
-        # Criar um arquivo de resultados vazio para evitar falha no workflow
-        pd.DataFrame(columns=['data', 'nome', 'seguidores']).to_excel('resultados.xlsx', index=False)
-        print("Criado resultados.xlsx vazio")
-        return
-    
-    # Verificar se o arquivo de resultados existe, senão criar
-    if os.path.exists('resultados.xlsx'):
-        print("Carregando arquivo de resultados existente")
-        resultados_df = pd.read_excel('resultados.xlsx')
-        print(f"Resultados carregados: {len(resultados_df)} registros")
-    else:
-        print("Criando novo DataFrame de resultados")
-        resultados_df = pd.DataFrame(columns=['data', 'nome', 'seguidores'])
-    
-    # Data atual
-    data_hoje = datetime.now().strftime("%Y-%m-%d")
-    print(f"Data de coleta: {data_hoje}")
-    
-    # Lista para armazenar novos resultados
-    novos_resultados = []
     
     try:
+        # Carregar configuração
+        dados = carregar_configuracao()
+        print(f"Configuração carregada: {len(dados)} registros")
+        
+        # Verificar se o arquivo de resultados existe, senão criar
+        if os.path.exists('resultados.xlsx'):
+            print("Carregando arquivo de resultados existente")
+            resultados_df = pd.read_excel('resultados.xlsx')
+            print(f"Resultados carregados: {len(resultados_df)} registros")
+        else:
+            print("Criando novo DataFrame de resultados")
+            resultados_df = pd.DataFrame(columns=['data', 'nome', 'seguidores'])
+        
+        # Data atual
+        data_hoje = datetime.now().strftime("%Y-%m-%d")
+        print(f"Data de coleta: {data_hoje}")
+        
+        # Lista para armazenar novos resultados
+        novos_resultados = []
+        
         # Inicializar o driver
         print("Inicializando o WebDriver")
         driver = configurar_driver()
@@ -162,7 +231,6 @@ def coletar_dados():
                             })
                     except Exception as e:
                         print(f"Erro ao processar elemento: {str(e)}")
-                        print(traceback.format_exc())
                         # Adiciona entrada com erro para manter registro
                         novos_resultados.append({
                             'data': data_hoje,
@@ -172,7 +240,6 @@ def coletar_dados():
                 
                 except Exception as e:
                     print(f"Erro ao processar {nome_pagina}: {str(e)}")
-                    print(traceback.format_exc())
                 
                 # Esperar entre requisições para evitar sobrecarga
                 time.sleep(random.uniform(2, 5))
@@ -180,12 +247,7 @@ def coletar_dados():
         finally:
             print("Finalizando o WebDriver")
             driver.quit()
-    
-    except Exception as e:
-        print(f"Erro geral: {str(e)}")
-        print(traceback.format_exc())
-    
-    finally:
+        
         # Garantir que o arquivo de resultados seja criado mesmo se não houver dados novos
         if not novos_resultados:
             print("Nenhum novo resultado coletado")
@@ -200,7 +262,6 @@ def coletar_dados():
         novos_df = pd.DataFrame(novos_resultados)
         
         # Atualizar registros existentes do mesmo dia ou adicionar novos
-        # Esta é a parte chave para evitar duplicatas no mesmo dia
         if not resultados_df.empty:
             # Para cada novo resultado...
             for _, nova_linha in novos_df.iterrows():
@@ -222,10 +283,17 @@ def coletar_dados():
         # Ordenar por data (mais recente primeiro) e nome
         resultados_df = resultados_df.sort_values(['data', 'nome'], ascending=[False, True])
         
-        # Salvar resultados atualizados
-        print("Salvando resultados em resultados.xlsx")
-        resultados_df.to_excel('resultados.xlsx', index=False)
-        print(f"Dados salvos em resultados.xlsx - {len(resultados_df)} registros totais")
+        # Salvar resultados em múltiplos formatos
+        salvar_resultados(resultados_df)
+        
+    except Exception as e:
+        print(f"Erro geral: {str(e)}")
+        print(traceback.format_exc())
+        # Garantir que o arquivo de resultados exista mesmo em caso de erro fatal
+        if not os.path.exists('resultados.xlsx'):
+            df_vazio = pd.DataFrame(columns=['data', 'nome', 'seguidores'])
+            salvar_resultados(df_vazio)
+            print("Criados arquivos vazios devido a erro")
 
 if __name__ == "__main__":
     try:
@@ -235,7 +303,8 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Erro geral no script: {str(e)}")
         print(traceback.format_exc())
-        # Garantir que o arquivo de resultados exista mesmo em caso de erro fatal
+        # Garantir que os arquivos de resultados existam mesmo em caso de erro fatal
         if not os.path.exists('resultados.xlsx'):
-            pd.DataFrame(columns=['data', 'nome', 'seguidores']).to_excel('resultados.xlsx', index=False)
-            print("Criado resultados.xlsx vazio devido a erro")
+            df_vazio = pd.DataFrame(columns=['data', 'nome', 'seguidores'])
+            salvar_resultados(df_vazio)
+            print("Criados arquivos vazios devido a erro")
