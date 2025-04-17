@@ -23,9 +23,9 @@ def configurar_driver():
     options.add_argument("--window-size=1920,1080")
     options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36")
     
-    # No GitHub Actions, não use o ChromeDriverManager, use o Chrome já instalado
+    # No GitHub Actions, use o Chrome já instalado
     try:
-        print("Tentando usar o Chrome instalado no ambiente...")
+        print("Usando o Chrome instalado no ambiente...")
         driver = webdriver.Chrome(options=options)
         return driver
     except Exception as e:
@@ -37,7 +37,7 @@ def configurar_driver():
 
 def extrair_seguidores(texto):
     """Extrai o número de seguidores do texto"""
-    # Imprime o texto completo para debugging
+    # Imprime o texto para debugging
     print(f"Texto para extração: '{texto}'")
     
     # Pattern para encontrar números seguidos pela palavra "seguidores"
@@ -73,7 +73,6 @@ def coletar_dados():
     """Função principal para coleta de dados"""
     print("Iniciando coleta de dados")
     print(f"Diretório atual: {os.getcwd()}")
-    print(f"Conteúdo do diretório: {os.listdir('.')}")
     
     # Verificar se o arquivo de configuração existe
     if not os.path.exists('config.xlsx'):
@@ -128,22 +127,11 @@ def coletar_dados():
                     
                     # Acessar a URL
                     driver.get(url)
-                    time.sleep(5)  # Aumentado para 5 segundos
-                    
-                    # Capturar screenshot para debugging
-                    try:
-                        screenshot_path = f"screenshot_{nome_pagina}.png"
-                        driver.save_screenshot(screenshot_path)
-                        print(f"Screenshot salvo em {screenshot_path}")
-                    except Exception as e:
-                        print(f"Erro ao salvar screenshot: {str(e)}")
+                    time.sleep(5)  # Aguardar carregamento
                     
                     # Pressionar ESC para fechar possíveis popups
                     webdriver.ActionChains(driver).send_keys(Keys.ESCAPE).perform()
                     time.sleep(1)
-                    
-                    # Imprimir HTML para debug
-                    print(f"HTML da página: {driver.page_source[:500]}...")
                     
                     try:
                         # Encontrar o elemento usando XPath
@@ -208,10 +196,31 @@ def coletar_dados():
                 'seguidores': 0
             })
         
-        # Adicionar novos resultados ao DataFrame
-        print(f"Adicionando {len(novos_resultados)} novos resultados")
+        # Converter para DataFrame
         novos_df = pd.DataFrame(novos_resultados)
-        resultados_df = pd.concat([resultados_df, novos_df], ignore_index=True)
+        
+        # Atualizar registros existentes do mesmo dia ou adicionar novos
+        # Esta é a parte chave para evitar duplicatas no mesmo dia
+        if not resultados_df.empty:
+            # Para cada novo resultado...
+            for _, nova_linha in novos_df.iterrows():
+                # Verificar se já existe um registro para este nome_pagina na mesma data
+                mask = (resultados_df['data'] == nova_linha['data']) & (resultados_df['nome'] == nova_linha['nome'])
+                
+                if mask.any():
+                    # Se já existe, atualiza o valor de seguidores
+                    print(f"Atualizando registro existente para {nova_linha['nome']} em {nova_linha['data']}")
+                    resultados_df.loc[mask, 'seguidores'] = nova_linha['seguidores']
+                else:
+                    # Se não existe, adiciona a nova linha
+                    print(f"Adicionando novo registro para {nova_linha['nome']} em {nova_linha['data']}")
+                    resultados_df = pd.concat([resultados_df, pd.DataFrame([nova_linha])], ignore_index=True)
+        else:
+            # Se o DataFrame de resultados estiver vazio, use os novos resultados diretamente
+            resultados_df = novos_df
+        
+        # Ordenar por data (mais recente primeiro) e nome
+        resultados_df = resultados_df.sort_values(['data', 'nome'], ascending=[False, True])
         
         # Salvar resultados atualizados
         print("Salvando resultados em resultados.xlsx")
