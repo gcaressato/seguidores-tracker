@@ -10,6 +10,7 @@ from selenium.webdriver.common.keys import Keys
 from webdriver_manager.chrome import ChromeDriverManager
 import time
 import os
+import random  # Adicionado importação no topo
 from datetime import datetime
 
 def configurar_driver():
@@ -119,5 +120,4 @@ def coletar_dados():
       print(f"Dados salvos em resultados.xlsx")
 
 if __name__ == "__main__":
-  import random
-  coletar_dados()
+  coletar_dados()  # Removida importação interna de random
