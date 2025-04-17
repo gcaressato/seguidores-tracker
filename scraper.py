@@ -318,11 +318,9 @@ def extrair_seguidores_instagram(driver, xpath, nome_pagina):
 
     # Lista de métodos a serem tentados em ordem (do mais eficaz ao menos eficaz)
     metodos = [
-        (extrair_seguidores_instagram_method6, [driver]),         # Seletores modernos 2025
         (extrair_seguidores_instagram_method2, [driver]),         # CSS Selector específico
         (extrair_seguidores_instagram_method1, [driver, xpath]),  # XPath fornecido
         (extrair_seguidores_instagram_method5, [driver]),         # JavaScript otimizado
-        (extrair_seguidores_instagram_method7, [driver]),         # JS com getComputedText
         (extrair_seguidores_instagram_method4, [driver]),         # Busca por texto
         (extrair_seguidores_instagram_method3, [driver]),         # Aria-label (mais lento)
     ]
@@ -337,7 +335,7 @@ def extrair_seguidores_instagram(driver, xpath, nome_pagina):
                 return seguidores
             logging.info(f"❌ Método {i+1}: Sem resultado")
         except Exception as e:
-            logging.info(f"❌ Método {i+1}: Erro - {str(e)[:50]}")
+            logging.info(f"❌ Método {i+1}: Erro - {str(e)[:50] if str(e) else 'Erro desconhecido'}")
     
     logging.info(f"⚠️ Todos os métodos falharam para {nome_pagina}")
     return None
