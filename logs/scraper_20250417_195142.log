@@ -1,0 +1,151 @@
+2025-04-17 19:51:33,023 - INFO - Iniciando script de coleta
+2025-04-17 19:51:33,023 - INFO - Iniciando coleta de dados
+2025-04-17 19:51:33,023 - INFO - Diretório atual: /home/runner/work/seguidores-tracker/seguidores-tracker
+2025-04-17 19:51:33,023 - INFO - Carregando dados do arquivo config.json
+2025-04-17 19:51:33,024 - INFO - Dados carregados: 2 registros
+2025-04-17 19:51:33,024 - INFO - Colunas: ['nome_pagina', 'rede', 'url', 'xpath']
+2025-04-17 19:51:33,024 - INFO - Carregando arquivo de resultados existente
+2025-04-17 19:51:33,026 - INFO - Resultados carregados: 2 registros
+2025-04-17 19:51:33,026 - INFO - Data de coleta: 2025-04-17
+2025-04-17 19:51:33,026 - INFO - Inicializando o WebDriver
+2025-04-17 19:51:33,026 - INFO - Configurando o ChromeDriver com proteções anti-detecção avançadas
+2025-04-17 19:51:33,026 - INFO - Usando resolução de tela: 1169x909
+2025-04-17 19:51:33,026 - INFO - Usando user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36
+2025-04-17 19:51:33,026 - INFO - Tentando usar o Chrome instalado no ambiente...
+2025-04-17 19:51:41,037 - ERROR - Erro ao usar Chrome instalado: Message: javascript error: Cannot redefine property: webdriver
+  (Session info: chrome=135.0.7049.84)
+Stacktrace:
+#0 0x55c3d7b52d0a <unknown>
+#1 0x55c3d76035f0 <unknown>
+#2 0x55c3d760a216 <unknown>
+#3 0x55c3d760cd67 <unknown>
+#4 0x55c3d76a169e <unknown>
+#5 0x55c3d767a662 <unknown>
+#6 0x55c3d76a0660 <unknown>
+#7 0x55c3d767a433 <unknown>
+#8 0x55c3d7646ea3 <unknown>
+#9 0x55c3d7647b01 <unknown>
+#10 0x55c3d7b17b5b <unknown>
+#11 0x55c3d7b1ba41 <unknown>
+#12 0x55c3d7afec52 <unknown>
+#13 0x55c3d7b1c5b4 <unknown>
+#14 0x55c3d7ae2f0f <unknown>
+#15 0x55c3d7b40db8 <unknown>
+#16 0x55c3d7b40f96 <unknown>
+#17 0x55c3d7b51b56 <unknown>
+#18 0x7f8ef329caa4 <unknown>
+#19 0x7f8ef3329c3c <unknown>
+
+2025-04-17 19:51:41,037 - INFO - Tentando com ChromeDriverManager...
+2025-04-17 19:51:41,037 - INFO - ====== WebDriver manager ======
+2025-04-17 19:51:41,150 - INFO - Get LATEST chromedriver version for google-chrome
+2025-04-17 19:51:41,162 - INFO - Get LATEST chromedriver version for google-chrome
+2025-04-17 19:51:41,177 - INFO - There is no [linux64] chromedriver "135.0.7049.95" for browser google-chrome "135.0.7049" in cache
+2025-04-17 19:51:41,177 - INFO - Get LATEST chromedriver version for google-chrome
+2025-04-17 19:51:41,222 - INFO - WebDriver version 135.0.7049.95 selected
+2025-04-17 19:51:41,226 - INFO - Modern chrome version https://storage.googleapis.com/chrome-for-testing-public/135.0.7049.95/linux64/chromedriver-linux64.zip
+2025-04-17 19:51:41,226 - INFO - About to download new driver from https://storage.googleapis.com/chrome-for-testing-public/135.0.7049.95/linux64/chromedriver-linux64.zip
+2025-04-17 19:51:41,240 - INFO - Driver downloading response is 200
+2025-04-17 19:51:41,292 - INFO - Get LATEST chromedriver version for google-chrome
+2025-04-17 19:51:41,424 - INFO - Driver has been saved in cache [/home/runner/.wdm/drivers/chromedriver/linux64/135.0.7049.95]
+2025-04-17 19:51:42,271 - ERROR - Erro geral: Message: javascript error: Cannot redefine property: webdriver
+  (Session info: chrome=135.0.7049.84)
+Stacktrace:
+#0 0x5632ce131cea <unknown>
+#1 0x5632cdbe25f0 <unknown>
+#2 0x5632cdbe9216 <unknown>
+#3 0x5632cdbebd67 <unknown>
+#4 0x5632cdc8069e <unknown>
+#5 0x5632cdc59662 <unknown>
+#6 0x5632cdc7f660 <unknown>
+#7 0x5632cdc59433 <unknown>
+#8 0x5632cdc25ea3 <unknown>
+#9 0x5632cdc26b01 <unknown>
+#10 0x5632ce0f6b3b <unknown>
+#11 0x5632ce0faa21 <unknown>
+#12 0x5632ce0ddc32 <unknown>
+#13 0x5632ce0fb594 <unknown>
+#14 0x5632ce0c1eef <unknown>
+#15 0x5632ce11fd98 <unknown>
+#16 0x5632ce11ff76 <unknown>
+#17 0x5632ce130b36 <unknown>
+#18 0x7f86b629caa4 <unknown>
+#19 0x7f86b6329c3c <unknown>
+
+2025-04-17 19:51:42,272 - ERROR - Traceback (most recent call last):
+  File "/home/runner/work/seguidores-tracker/seguidores-tracker/scraper.py", line 146, in configurar_driver
+    driver.execute_script(script)
+  File "/opt/hostedtoolcache/Python/3.10.17/x64/lib/python3.10/site-packages/selenium/webdriver/remote/webdriver.py", line 528, in execute_script
+    return self.execute(command, {"script": script, "args": converted_args})["value"]
+  File "/opt/hostedtoolcache/Python/3.10.17/x64/lib/python3.10/site-packages/selenium/webdriver/remote/webdriver.py", line 429, in execute
+    self.error_handler.check_response(response)
+  File "/opt/hostedtoolcache/Python/3.10.17/x64/lib/python3.10/site-packages/selenium/webdriver/remote/errorhandler.py", line 232, in check_response
+    raise exception_class(message, screen, stacktrace)
+selenium.common.exceptions.JavascriptException: Message: javascript error: Cannot redefine property: webdriver
+  (Session info: chrome=135.0.7049.84)
+Stacktrace:
+#0 0x55c3d7b52d0a <unknown>
+#1 0x55c3d76035f0 <unknown>
+#2 0x55c3d760a216 <unknown>
+#3 0x55c3d760cd67 <unknown>
+#4 0x55c3d76a169e <unknown>
+#5 0x55c3d767a662 <unknown>
+#6 0x55c3d76a0660 <unknown>
+#7 0x55c3d767a433 <unknown>
+#8 0x55c3d7646ea3 <unknown>
+#9 0x55c3d7647b01 <unknown>
+#10 0x55c3d7b17b5b <unknown>
+#11 0x55c3d7b1ba41 <unknown>
+#12 0x55c3d7afec52 <unknown>
+#13 0x55c3d7b1c5b4 <unknown>
+#14 0x55c3d7ae2f0f <unknown>
+#15 0x55c3d7b40db8 <unknown>
+#16 0x55c3d7b40f96 <unknown>
+#17 0x55c3d7b51b56 <unknown>
+#18 0x7f8ef329caa4 <unknown>
+#19 0x7f8ef3329c3c <unknown>
+
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/runner/work/seguidores-tracker/seguidores-tracker/scraper.py", line 555, in coletar_dados
+    driver = configurar_driver()
+  File "/home/runner/work/seguidores-tracker/seguidores-tracker/scraper.py", line 189, in configurar_driver
+    driver.execute_script(script)
+  File "/opt/hostedtoolcache/Python/3.10.17/x64/lib/python3.10/site-packages/selenium/webdriver/remote/webdriver.py", line 528, in execute_script
+    return self.execute(command, {"script": script, "args": converted_args})["value"]
+  File "/opt/hostedtoolcache/Python/3.10.17/x64/lib/python3.10/site-packages/selenium/webdriver/remote/webdriver.py", line 429, in execute
+    self.error_handler.check_response(response)
+  File "/opt/hostedtoolcache/Python/3.10.17/x64/lib/python3.10/site-packages/selenium/webdriver/remote/errorhandler.py", line 232, in check_response
+    raise exception_class(message, screen, stacktrace)
+selenium.common.exceptions.JavascriptException: Message: javascript error: Cannot redefine property: webdriver
+  (Session info: chrome=135.0.7049.84)
+Stacktrace:
+#0 0x5632ce131cea <unknown>
+#1 0x5632cdbe25f0 <unknown>
+#2 0x5632cdbe9216 <unknown>
+#3 0x5632cdbebd67 <unknown>
+#4 0x5632cdc8069e <unknown>
+#5 0x5632cdc59662 <unknown>
+#6 0x5632cdc7f660 <unknown>
+#7 0x5632cdc59433 <unknown>
+#8 0x5632cdc25ea3 <unknown>
+#9 0x5632cdc26b01 <unknown>
+#10 0x5632ce0f6b3b <unknown>
+#11 0x5632ce0faa21 <unknown>
+#12 0x5632ce0ddc32 <unknown>
+#13 0x5632ce0fb594 <unknown>
+#14 0x5632ce0c1eef <unknown>
+#15 0x5632ce11fd98 <unknown>
+#16 0x5632ce11ff76 <unknown>
+#17 0x5632ce130b36 <unknown>
+#18 0x7f86b629caa4 <unknown>
+#19 0x7f86b6329c3c <unknown>
+
+
+2025-04-17 19:51:42,272 - WARNING - Nenhum novo resultado coletado
+2025-04-17 19:51:42,273 - INFO - Adicionando novo registro para sem_dados em 2025-04-17
+2025-04-17 19:51:42,275 - INFO - Salvando resultados em resultados.csv
+2025-04-17 19:51:42,526 - INFO - Dados salvos em resultados.csv - 3 registros totais
+2025-04-17 19:51:42,527 - INFO - Script de coleta concluído com sucesso
