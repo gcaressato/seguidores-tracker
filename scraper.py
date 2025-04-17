@@ -126,118 +126,89 @@ def tirar_screenshot(driver, nome_pagina):
 
 def extrair_seguidores_instagram_method1(driver, xpath):
     """Método 1: Usando o XPath fornecido."""
-    logging.info("Tentando extrair seguidores do Instagram usando o Método 1 (XPath fornecido)")
-    
     try:
         # Usando o XPath fornecido
-        followers_element = WebDriverWait(driver, 10).until(
+        followers_element = WebDriverWait(driver, 5).until(
             EC.presence_of_element_located((By.XPATH, xpath))
         )
         
         followers_text = followers_element.text
-        logging.info(f"Método 1 - Texto encontrado: {followers_text}")
         
         # Tenta converter para número
-        try:
-            # Remove caracteres não numéricos
-            followers_count = ''.join(filter(str.isdigit, followers_text))
+        followers_count = ''.join(filter(str.isdigit, followers_text))
+        if followers_count:
             followers_count = int(followers_count)
-            logging.info(f"Método 1 - Número de seguidores: {followers_count}")
             return followers_count
-        except ValueError:
-            logging.error(f"Método 1 - Não foi possível converter '{followers_text}' para número")
-            return None
+        return None
         
-    except Exception as e:
-        logging.error(f"Método 1 - Erro: {str(e)}")
+    except Exception:
         return None
 
 def extrair_seguidores_instagram_method2(driver):
     """Método 2: Usando seletores CSS mais genéricos."""
-    logging.info("Tentando extrair seguidores do Instagram usando o Método 2 (CSS Selectors)")
-    
     try:
         # Tenta encontrar usando CSS Selector mais genérico
         css_selector = "section main header section ul li:nth-child(2) span"
-        followers_element = WebDriverWait(driver, 10).until(
+        followers_element = WebDriverWait(driver, 5).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, css_selector))
         )
         
         followers_text = followers_element.text
-        logging.info(f"Método 2 - Texto encontrado: {followers_text}")
         
         # Tenta converter para número
-        try:
-            # Remove caracteres não numéricos
-            followers_count = ''.join(filter(str.isdigit, followers_text))
+        followers_count = ''.join(filter(str.isdigit, followers_text))
+        if followers_count:
             followers_count = int(followers_count)
-            logging.info(f"Método 2 - Número de seguidores: {followers_count}")
             return followers_count
-        except ValueError:
-            logging.error(f"Método 2 - Não foi possível converter '{followers_text}' para número")
-            return None
+        return None
         
-    except Exception as e:
-        logging.error(f"Método 2 - Erro: {str(e)}")
+    except Exception:
         return None
 
 def extrair_seguidores_instagram_method3(driver):
-    """Método 3: Encontra elementos by aria-label (mais resistente a mudanças)."""
-    logging.info("Tentando extrair seguidores do Instagram usando o Método 3 (aria-label)")
-    
+    """Método 3: Encontra elementos by aria-label."""
     try:
         # Localiza link/botão de seguidores pelo atributo aria-label
-        # O aria-label geralmente contém o texto "X followers"
         elements = driver.find_elements(By.XPATH, "//*[contains(@aria-label, 'follower') or contains(@aria-label, 'seguidor')]")
         
         if not elements:
-            logging.error("Método 3 - Nenhum elemento com aria-label contendo 'follower' ou 'seguidor'")
             return None
         
         for element in elements:
             aria_label = element.get_attribute("aria-label")
-            logging.info(f"Método 3 - Elemento com aria-label: {aria_label}")
             
             # Extrai números do texto
             followers_count = ''.join(filter(str.isdigit, aria_label))
             if followers_count:
                 try:
                     followers_count = int(followers_count)
-                    logging.info(f"Método 3 - Número de seguidores: {followers_count}")
                     return followers_count
                 except ValueError:
                     continue
         
-        logging.error("Método 3 - Não foi possível extrair número de seguidores de nenhum elemento")
         return None
         
-    except Exception as e:
-        logging.error(f"Método 3 - Erro: {str(e)}")
+    except Exception:
         return None
 
 def extrair_seguidores_instagram_method4(driver):
     """Método 4: Busca por texto contendo 'seguidores' ou 'followers'."""
-    logging.info("Tentando extrair seguidores do Instagram usando o Método 4 (busca por texto)")
-    
     try:
         # Tenta encontrar qualquer elemento que contenha o texto 'seguidores' ou 'followers'
         elements = driver.find_elements(By.XPATH, 
                                        "//*[contains(text(), 'seguidores') or contains(text(), 'followers')]")
         
         if not elements:
-            logging.error("Método 4 - Nenhum elemento contendo o texto 'seguidores' ou 'followers'")
             return None
         
         for element in elements:
             text = element.text
-            logging.info(f"Método 4 - Texto encontrado: {text}")
             
             # Se for apenas o texto "seguidores" ou "followers", tenta pegar o elemento pai
             if text.strip().lower() in ['seguidores', 'followers']:
                 try:
                     parent = element.find_element(By.XPATH, "./..")
                     text = parent.text
-                    logging.info(f"Método 4 - Texto do elemento pai: {text}")
                 except:
                     pass
             
@@ -246,44 +217,66 @@ def extrair_seguidores_instagram_method4(driver):
             if numbers:
                 try:
                     followers_count = int(numbers)
-                    logging.info(f"Método 4 - Número de seguidores encontrado: {followers_count}")
                     return followers_count
                 except ValueError:
                     continue
         
-        logging.error("Método 4 - Não foi possível extrair número de seguidores")
         return None
         
-    except Exception as e:
-        logging.error(f"Método 4 - Erro: {str(e)}")
+    except Exception:
         return None
 
 def extrair_seguidores_instagram_method5(driver):
     """Método 5: Tentativa usando JavaScript para extrair dados da página."""
-    logging.info("Tentando extrair seguidores do Instagram usando JavaScript (Método 5)")
+    logging.info("Tentando extrair seguidores via JavaScript (Método 5)")
     
     try:
-        # Script JS para buscar elementos com texto que possa conter informações sobre seguidores
+        # Script JS otimizado para focar apenas em elementos menores que contêm dados de seguidores
         js_script = """
         const extractNumber = (text) => {
-            const matches = text.match(/\\d+/g);
+            if (!text) return null;
+            const matches = text.match(/\\d+[.,]?\\d*/g);
             return matches ? matches.join('') : null;
         };
         
-        // Tentativa 1: Buscar elementos que contenham 'seguidores' ou 'followers'
-        const elements = Array.from(document.querySelectorAll('*')).filter(el => 
-            el.textContent.includes('seguidores') || 
-            el.textContent.includes('followers') || 
-            el.textContent.includes('seguidor')
-        );
+        // Busca mais focada em elementos específicos
+        let results = [];
         
-        // Extrair textos
-        const results = elements.map(el => ({
-            tagName: el.tagName,
-            className: el.className,
-            text: el.textContent,
-            number: extractNumber(el.textContent)
-        }));
+        // 1. Tenta elementos com os textos específicos de seguidores
+        const targetTexts = ['seguidores', 'followers', 'seguidor'];
+        for (const text of targetTexts) {
+            const elements = document.querySelectorAll(`*:not(script):not(style)`);
+            for (let i = 0; i < Math.min(elements.length, 100); i++) {
+                const el = elements[i];
+                if (el.textContent && el.textContent.toLowerCase().includes(text) && 
+                    el.textContent.length < 100) {  // Limita tamanho do texto
+                    results.push({
+                        text: el.textContent.trim(),
+                        number: extractNumber(el.textContent)
+                    });
+                }
+            }
+        }
+        
+        // 2. Tenta elementos específicos por seletores conhecidos do Instagram
+        const selectors = [
+            'section main header section ul li span', 
+            'span._ac2a',
+            'span[title]'
+        ];
+        
+        for (const selector of selectors) {
+            const elements = document.querySelectorAll(selector);
+            for (let i = 0; i < elements.length; i++) {
+                const el = elements[i];
+                if (el.textContent && el.textContent.length < 50) {
+                    results.push({
+                        text: el.textContent.trim(),
+                        number: extractNumber(el.textContent)
+                    });
+                }
+            }
+        }
         
         return JSON.stringify(results);
         """
@@ -291,29 +284,29 @@ def extrair_seguidores_instagram_method5(driver):
         result = driver.execute_script(js_script)
         data = json.loads(result)
         
-        logging.info(f"Método 5 - Encontrados {len(data)} elementos via JavaScript")
-        
-        # Registra todos os elementos encontrados
-        for i, item in enumerate(data):
-            logging.info(f"Método 5 - Item {i+1}: Tag: {item['tagName']}, Classe: {item['className']}, Texto: {item['text']}, Número: {item['number']}")
-        
         # Filtra apenas os que têm números
-        valid_data = [item for item in data if item['number']]
+        valid_data = [item for item in data if item.get('number')]
         
         if valid_data:
-            # Ordena por tamanho do número (geralmente o número de seguidores não é muito grande)
-            valid_data.sort(key=lambda x: len(x['number']))
+            # Log de amostra de dados encontrados (limitado a 3)
+            for i, item in enumerate(valid_data[:3]):
+                logging.info(f"Método 5 - Item {i+1}: Texto: {item['text']}")
             
-            # Pega o primeiro número encontrado
-            followers_count = int(valid_data[0]['number'])
-            logging.info(f"Método 5 - Número de seguidores encontrado: {followers_count}")
-            return followers_count
-        else:
-            logging.error("Método 5 - Nenhum número extraído dos elementos")
-            return None
+            # Pega o primeiro número válido
+            for item in valid_data:
+                try:
+                    if item['number'] and len(item['number']) < 10:  # Evita números gigantes
+                        followers_count = int(item['number'].replace(',', '').replace('.', ''))
+                        logging.info(f"Método 5 - Seguidores encontrados: {followers_count}")
+                        return followers_count
+                except (ValueError, TypeError):
+                    continue
+        
+        logging.info("Método 5 - Nenhum número válido extraído")
+        return None
         
     except Exception as e:
-        logging.error(f"Método 5 - Erro ao executar JavaScript: {str(e)}")
+        logging.info(f"Método 5 - Erro: {str(e)}")
         return None
 
 def extrair_seguidores_instagram(driver, xpath, nome_pagina):
@@ -321,29 +314,32 @@ def extrair_seguidores_instagram(driver, xpath, nome_pagina):
     Tenta extrair seguidores do Instagram usando múltiplos métodos.
     Retorna ao primeiro sinal de sucesso para otimizar o tempo de execução.
     """
-    logging.info(f"Iniciando extração de seguidores do Instagram para {nome_pagina}")
+    logging.info(f"Extraindo seguidores para {nome_pagina} (Instagram)")
 
-    # Lista de métodos a serem tentados em ordem
+    # Lista de métodos a serem tentados em ordem (do mais eficaz ao menos eficaz)
     metodos = [
-        (extrair_seguidores_instagram_method1, [driver, xpath]),
-        (extrair_seguidores_instagram_method2, [driver]),
-        (extrair_seguidores_instagram_method4, [driver]),
-        (extrair_seguidores_instagram_method5, [driver]),
-        (extrair_seguidores_instagram_method3, [driver]),  # Método 3 por último, pois é mais lento
+        (extrair_seguidores_instagram_method6, [driver]),         # Seletores modernos 2025
+        (extrair_seguidores_instagram_method2, [driver]),         # CSS Selector específico
+        (extrair_seguidores_instagram_method1, [driver, xpath]),  # XPath fornecido
+        (extrair_seguidores_instagram_method5, [driver]),         # JavaScript otimizado
+        (extrair_seguidores_instagram_method7, [driver]),         # JS com getComputedText
+        (extrair_seguidores_instagram_method4, [driver]),         # Busca por texto
+        (extrair_seguidores_instagram_method3, [driver]),         # Aria-label (mais lento)
     ]
     
     # Tenta cada método até encontrar um que funcione
     for i, (metodo, args) in enumerate(metodos):
         try:
-            logging.info(f"Tentando método {i+1} para {nome_pagina}")
+            logging.info(f"Método {i+1} para {nome_pagina}")
             seguidores = metodo(*args)
             if seguidores:
-                logging.info(f"Método {i+1} bem-sucedido para {nome_pagina}: {seguidores} seguidores")
+                logging.info(f"✅ Método {i+1}: {seguidores} seguidores")
                 return seguidores
+            logging.info(f"❌ Método {i+1}: Sem resultado")
         except Exception as e:
-            logging.error(f"Erro no método {i+1} para {nome_pagina}: {str(e)}")
+            logging.info(f"❌ Método {i+1}: Erro - {str(e)[:50]}")
     
-    logging.error(f"Todos os métodos falharam para {nome_pagina}")
+    logging.info(f"⚠️ Todos os métodos falharam para {nome_pagina}")
     return None
 
 def lidar_com_cookies_instagram(driver):
