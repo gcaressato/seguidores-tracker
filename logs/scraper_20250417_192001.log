@@ -1,0 +1,128 @@
+2025-04-17 19:18:26,376 - INFO - Iniciando script de coleta
+2025-04-17 19:18:26,376 - INFO - Iniciando coleta de dados
+2025-04-17 19:18:26,376 - INFO - Diretório atual: /home/runner/work/seguidores-tracker/seguidores-tracker
+2025-04-17 19:18:26,377 - INFO - Carregando dados do arquivo config.json
+2025-04-17 19:18:26,377 - INFO - Dados carregados: 2 registros
+2025-04-17 19:18:26,377 - INFO - Colunas: ['nome_pagina', 'rede', 'url', 'xpath']
+2025-04-17 19:18:26,377 - INFO - Criando novo DataFrame de resultados
+2025-04-17 19:18:26,379 - INFO - Data de coleta: 2025-04-17
+2025-04-17 19:18:26,379 - INFO - Inicializando o WebDriver
+2025-04-17 19:18:26,379 - INFO - Configurando o ChromeDriver
+2025-04-17 19:18:26,379 - INFO - Tentando usar o Chrome instalado no ambiente...
+2025-04-17 19:18:34,549 - INFO - Chrome inicializado com sucesso
+2025-04-17 19:18:34,549 - INFO - Processando [1/2]: Tereos, Rede: Linkedin, URL: https://www.linkedin.com/company/tereos/
+2025-04-17 19:18:37,226 - INFO - Página carregada: https://www.linkedin.com/company/tereos/
+2025-04-17 19:18:42,408 - INFO - Screenshot salvo em screenshots/Tereos_20250417_191842.png
+2025-04-17 19:18:43,453 - INFO - Buscando elemento com XPath: //*[@class="org-top-card-summary__follower-count"]
+2025-04-17 19:19:13,781 - ERROR - Erro ao processar elemento: Message: 
+Stacktrace:
+#0 0x55873bebed0a <unknown>
+#1 0x55873b96f5f0 <unknown>
+#2 0x55873b9c0a33 <unknown>
+#3 0x55873b9c0c21 <unknown>
+#4 0x55873ba0f274 <unknown>
+#5 0x55873b9e668d <unknown>
+#6 0x55873ba0c660 <unknown>
+#7 0x55873b9e6433 <unknown>
+#8 0x55873b9b2ea3 <unknown>
+#9 0x55873b9b3b01 <unknown>
+#10 0x55873be83b5b <unknown>
+#11 0x55873be87a41 <unknown>
+#12 0x55873be6ac52 <unknown>
+#13 0x55873be885b4 <unknown>
+#14 0x55873be4ef0f <unknown>
+#15 0x55873beacdb8 <unknown>
+#16 0x55873beacf96 <unknown>
+#17 0x55873bebdb56 <unknown>
+#18 0x7f06e249caa4 <unknown>
+#19 0x7f06e2529c3c <unknown>
+
+2025-04-17 19:19:13,782 - ERROR - Traceback (most recent call last):
+  File "/home/runner/work/seguidores-tracker/seguidores-tracker/scraper.py", line 180, in coletar_dados
+    elemento = WebDriverWait(driver, 30).until(
+  File "/opt/hostedtoolcache/Python/3.10.17/x64/lib/python3.10/site-packages/selenium/webdriver/support/wait.py", line 146, in until
+    raise TimeoutException(message, screen, stacktrace)
+selenium.common.exceptions.TimeoutException: Message: 
+Stacktrace:
+#0 0x55873bebed0a <unknown>
+#1 0x55873b96f5f0 <unknown>
+#2 0x55873b9c0a33 <unknown>
+#3 0x55873b9c0c21 <unknown>
+#4 0x55873ba0f274 <unknown>
+#5 0x55873b9e668d <unknown>
+#6 0x55873ba0c660 <unknown>
+#7 0x55873b9e6433 <unknown>
+#8 0x55873b9b2ea3 <unknown>
+#9 0x55873b9b3b01 <unknown>
+#10 0x55873be83b5b <unknown>
+#11 0x55873be87a41 <unknown>
+#12 0x55873be6ac52 <unknown>
+#13 0x55873be885b4 <unknown>
+#14 0x55873be4ef0f <unknown>
+#15 0x55873beacdb8 <unknown>
+#16 0x55873beacf96 <unknown>
+#17 0x55873bebdb56 <unknown>
+#18 0x7f06e249caa4 <unknown>
+#19 0x7f06e2529c3c <unknown>
+
+
+2025-04-17 19:19:17,429 - INFO - Processando [2/2]: Lilly, Rede: Instagram, URL: https://www.instagram.com/lilly_brasil/
+2025-04-17 19:19:18,107 - INFO - Página carregada: https://www.instagram.com/lilly_brasil/
+2025-04-17 19:19:23,211 - INFO - Screenshot salvo em screenshots/Lilly_20250417_191923.png
+2025-04-17 19:19:24,224 - INFO - Buscando elemento com XPath: /html/body/div[1]/div/div/div[2]/div/div/div[1]/div[2]/div/div[1]/section/main/div/header/section/div[2]/ul/li[2]/div/button/span
+2025-04-17 19:19:54,462 - ERROR - Erro ao processar elemento: Message: 
+Stacktrace:
+#0 0x55873bebed0a <unknown>
+#1 0x55873b96f5f0 <unknown>
+#2 0x55873b9c0a33 <unknown>
+#3 0x55873b9c0c21 <unknown>
+#4 0x55873ba0f274 <unknown>
+#5 0x55873b9e668d <unknown>
+#6 0x55873ba0c660 <unknown>
+#7 0x55873b9e6433 <unknown>
+#8 0x55873b9b2ea3 <unknown>
+#9 0x55873b9b3b01 <unknown>
+#10 0x55873be83b5b <unknown>
+#11 0x55873be87a41 <unknown>
+#12 0x55873be6ac52 <unknown>
+#13 0x55873be885b4 <unknown>
+#14 0x55873be4ef0f <unknown>
+#15 0x55873beacdb8 <unknown>
+#16 0x55873beacf96 <unknown>
+#17 0x55873bebdb56 <unknown>
+#18 0x7f06e249caa4 <unknown>
+#19 0x7f06e2529c3c <unknown>
+
+2025-04-17 19:19:54,463 - ERROR - Traceback (most recent call last):
+  File "/home/runner/work/seguidores-tracker/seguidores-tracker/scraper.py", line 180, in coletar_dados
+    elemento = WebDriverWait(driver, 30).until(
+  File "/opt/hostedtoolcache/Python/3.10.17/x64/lib/python3.10/site-packages/selenium/webdriver/support/wait.py", line 146, in until
+    raise TimeoutException(message, screen, stacktrace)
+selenium.common.exceptions.TimeoutException: Message: 
+Stacktrace:
+#0 0x55873bebed0a <unknown>
+#1 0x55873b96f5f0 <unknown>
+#2 0x55873b9c0a33 <unknown>
+#3 0x55873b9c0c21 <unknown>
+#4 0x55873ba0f274 <unknown>
+#5 0x55873b9e668d <unknown>
+#6 0x55873ba0c660 <unknown>
+#7 0x55873b9e6433 <unknown>
+#8 0x55873b9b2ea3 <unknown>
+#9 0x55873b9b3b01 <unknown>
+#10 0x55873be83b5b <unknown>
+#11 0x55873be87a41 <unknown>
+#12 0x55873be6ac52 <unknown>
+#13 0x55873be885b4 <unknown>
+#14 0x55873be4ef0f <unknown>
+#15 0x55873beacdb8 <unknown>
+#16 0x55873beacf96 <unknown>
+#17 0x55873bebdb56 <unknown>
+#18 0x7f06e249caa4 <unknown>
+#19 0x7f06e2529c3c <unknown>
+
+
+2025-04-17 19:20:01,315 - INFO - Finalizando o WebDriver
+2025-04-17 19:20:01,399 - INFO - Salvando resultados em resultados.csv
+2025-04-17 19:20:01,400 - INFO - Dados salvos em resultados.csv - 2 registros totais
+2025-04-17 19:20:01,400 - INFO - Script de coleta concluído com sucesso
