@@ -16,12 +16,11 @@ from datetime import datetime
 import traceback
 import logging
 
-# Configurar logging
+# Configurar logging apenas para console (sem arquivo)
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('scraper.log'),
         logging.StreamHandler()
     ]
 )
@@ -120,20 +119,8 @@ def extrair_seguidores(texto):
     return None
 
 def tirar_screenshot(driver, nome_pagina):
-    """Tira um screenshot da página atual e salva em um diretório"""
-    try:
-        # Criar diretório de screenshots se não existir
-        if not os.path.exists('screenshots'):
-            os.makedirs('screenshots')
-        
-        # Nome do arquivo com timestamp para evitar sobrescritas
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        screenshot_path = f"screenshots/{nome_pagina}_{timestamp}.png"
-        
-        driver.save_screenshot(screenshot_path)
-        logging.info(f"Screenshot salvo em {screenshot_path}")
-    except Exception as e:
-        logging.error(f"Erro ao tirar screenshot: {str(e)}")
+    """Função mantida para compatibilidade, mas não salva mais screenshots"""
+    logging.info(f"Screenshot para {nome_pagina} desativado")
 
 # ----- NOVOS MÉTODOS PARA INSTAGRAM -----
 
@@ -592,10 +579,8 @@ def coletar_dados():
                             logging.info("Tentando métodos alternativos para encontrar o número de seguidores")
                             seguidores = encontrar_elemento_alternativo(driver, nome_pagina, rede)
                     
-                    # Gravar HTML para debug
-                    with open(f"debug_{nome_pagina}.html", "w", encoding="utf-8") as f:
-                        f.write(driver.page_source)
-                    logging.info(f"HTML da página salvo em debug_{nome_pagina}.html")
+                    # Não salva mais o HTML para debug
+                    logging.info(f"Processamento de {nome_pagina} concluído")
                     
                     # Registrar o resultado
                     if seguidores:
