@@ -3,7 +3,7 @@
     "nome_pagina": "Tereos",
     "rede": "Linkedin",
     "url": "https://www.linkedin.com/company/tereos/",
-    "xpath": "//*[@class=\"org-top-card-summary__follower-count\"]"
+    "xpath": "/html/body/main/section[1]/section/div/div[2]/div[1]/h3"
   },
   {
     "nome_pagina": "Lilly",
