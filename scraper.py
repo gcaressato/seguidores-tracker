@@ -1,5 +1,6 @@
 import pandas as pd
 import re
+import json
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
@@ -13,9 +14,21 @@ import os
 import random
 from datetime import datetime
 import traceback
+import logging
+
+# Configurar logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('scraper.log'),
+        logging.StreamHandler()
+    ]
+)
 
 def configurar_driver():
     """Configura e retorna uma instância do ChromeDriver"""
+    logging.info("Configurando o ChromeDriver")
     options = Options()
     options.add_argument("--headless")
     options.add_argument("--no-sandbox")
@@ -25,20 +38,22 @@ def configurar_driver():
     
     # No GitHub Actions, use o Chrome já instalado
     try:
-        print("Usando o Chrome instalado no ambiente...")
+        logging.info("Tentando usar o Chrome instalado no ambiente...")
         driver = webdriver.Chrome(options=options)
+        logging.info("Chrome inicializado com sucesso")
         return driver
     except Exception as e:
-        print(f"Erro ao usar Chrome instalado: {str(e)}")
-        print("Tentando com ChromeDriverManager...")
+        logging.error(f"Erro ao usar Chrome instalado: {str(e)}")
+        logging.info("Tentando com ChromeDriverManager...")
         service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=options)
+        logging.info("Chrome inicializado com ChromeDriverManager")
         return driver
 
 def extrair_seguidores(texto):
     """Extrai o número de seguidores do texto"""
-    # Imprime o texto para debugging
-    print(f"Texto para extração: '{texto}'")
+    # Registra o texto para debugging
+    logging.info(f"Texto para extração: '{texto}'")
     
     # Pattern para encontrar números seguidos pela palavra "seguidores"
     # Lida com formatos como "298.749 seguidores" ou "1.234 seguidores"
@@ -62,72 +77,97 @@ def extrair_seguidores(texto):
     for pattern in patterns:
         match = re.search(pattern, texto)
         if match:
-            print(f"Padrão alternativo encontrado: {pattern}")
+            logging.info(f"Padrão alternativo encontrado: {pattern}")
             seguidores = match.group(1).replace('.', '').replace(',', '')
             return int(seguidores)
     
-    print("Nenhum padrão de seguidores encontrado no texto")
+    logging.warning("Nenhum padrão de seguidores encontrado no texto")
     return None
+
+def tirar_screenshot(driver, nome_pagina):
+    """Tira um screenshot da página atual e salva em um diretório"""
+    try:
+        # Criar diretório de screenshots se não existir
+        if not os.path.exists('screenshots'):
+            os.makedirs('screenshots')
+        
+        # Nome do arquivo com timestamp para evitar sobrescritas
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        screenshot_path = f"screenshots/{nome_pagina}_{timestamp}.png"
+        
+        driver.save_screenshot(screenshot_path)
+        logging.info(f"Screenshot salvo em {screenshot_path}")
+    except Exception as e:
+        logging.error(f"Erro ao tirar screenshot: {str(e)}")
 
 def coletar_dados():
     """Função principal para coleta de dados"""
-    print("Iniciando coleta de dados")
-    print(f"Diretório atual: {os.getcwd()}")
+    logging.info("Iniciando coleta de dados")
+    logging.info(f"Diretório atual: {os.getcwd()}")
     
     # Verificar se o arquivo de configuração existe
-    if not os.path.exists('config.xlsx'):
-        print("Arquivo config.xlsx não encontrado!")
+    if not os.path.exists('config.json'):
+        logging.error("Arquivo config.json não encontrado!")
         # Criar um arquivo de resultados vazio para evitar falha no workflow
-        pd.DataFrame(columns=['data', 'nome', 'seguidores']).to_excel('resultados.xlsx', index=False)
-        print("Criado resultados.xlsx vazio")
+        pd.DataFrame(columns=['data', 'nome', 'rede', 'seguidores']).to_csv('resultados.csv', index=False)
+        logging.info("Criado resultados.csv vazio")
         return
     
-    # Carregar dados do Excel
-    print("Carregando dados do arquivo config.xlsx")
+    # Carregar dados do JSON
+    logging.info("Carregando dados do arquivo config.json")
     try:
-        dados = pd.read_excel('config.xlsx')
-        print(f"Dados carregados: {len(dados)} registros")
-        print(f"Colunas: {dados.columns.tolist()}")
+        with open('config.json', 'r', encoding='utf-8') as f:
+            dados_json = json.load(f)
+        
+        # Converter para DataFrame para facilitar o processamento
+        dados = pd.DataFrame(dados_json)
+        logging.info(f"Dados carregados: {len(dados)} registros")
+        logging.info(f"Colunas: {dados.columns.tolist()}")
     except Exception as e:
-        print(f"Erro ao carregar config.xlsx: {str(e)}")
+        logging.error(f"Erro ao carregar config.json: {str(e)}")
         # Criar um arquivo de resultados vazio para evitar falha no workflow
-        pd.DataFrame(columns=['data', 'nome', 'seguidores']).to_excel('resultados.xlsx', index=False)
-        print("Criado resultados.xlsx vazio")
+        pd.DataFrame(columns=['data', 'nome', 'rede', 'seguidores']).to_csv('resultados.csv', index=False)
+        logging.info("Criado resultados.csv vazio")
         return
     
     # Verificar se o arquivo de resultados existe, senão criar
-    if os.path.exists('resultados.xlsx'):
-        print("Carregando arquivo de resultados existente")
-        resultados_df = pd.read_excel('resultados.xlsx')
-        print(f"Resultados carregados: {len(resultados_df)} registros")
+    if os.path.exists('resultados.csv'):
+        logging.info("Carregando arquivo de resultados existente")
+        resultados_df = pd.read_csv('resultados.csv')
+        logging.info(f"Resultados carregados: {len(resultados_df)} registros")
     else:
-        print("Criando novo DataFrame de resultados")
-        resultados_df = pd.DataFrame(columns=['data', 'nome', 'seguidores'])
+        logging.info("Criando novo DataFrame de resultados")
+        resultados_df = pd.DataFrame(columns=['data', 'nome', 'rede', 'seguidores'])
     
     # Data atual
     data_hoje = datetime.now().strftime("%Y-%m-%d")
-    print(f"Data de coleta: {data_hoje}")
+    logging.info(f"Data de coleta: {data_hoje}")
     
     # Lista para armazenar novos resultados
     novos_resultados = []
     
     try:
         # Inicializar o driver
-        print("Inicializando o WebDriver")
+        logging.info("Inicializando o WebDriver")
         driver = configurar_driver()
         
         try:
-            for _, linha in dados.iterrows():
+            for i, linha in enumerate(dados_json):
                 try:
                     nome_pagina = linha['nome_pagina']
+                    rede = linha['rede']
                     url = linha['url']
                     xpath = linha['xpath']
                     
-                    print(f"Processando: {nome_pagina}, URL: {url}")
+                    logging.info(f"Processando [{i+1}/{len(dados_json)}]: {nome_pagina}, Rede: {rede}, URL: {url}")
                     
                     # Acessar a URL
                     driver.get(url)
+                    logging.info(f"Página carregada: {url}")
                     time.sleep(5)  # Aguardar carregamento
+                    
+                    # Tirar screenshot para debug
+                    tirar_screenshot(driver, nome_pagina)
                     
                     # Pressionar ESC para fechar possíveis popups
                     webdriver.ActionChains(driver).send_keys(Keys.ESCAPE).perform()
@@ -135,64 +175,75 @@ def coletar_dados():
                     
                     try:
                         # Encontrar o elemento usando XPath
-                        print(f"Buscando elemento com XPath: {xpath}")
-                        elemento = WebDriverWait(driver, 15).until(
+                        logging.info(f"Buscando elemento com XPath: {xpath}")
+                        # Aumentar timeout para 30 segundos
+                        elemento = WebDriverWait(driver, 30).until(
                             EC.presence_of_element_located((By.XPATH, xpath))
                         )
                         
                         # Extrair o texto e buscar o número de seguidores
                         texto_elemento = elemento.text
-                        print(f"Texto encontrado: '{texto_elemento}'")
+                        logging.info(f"Texto encontrado: '{texto_elemento}'")
+                        
+                        # Gravar HTML para debug em caso de dificuldade na extração
+                        with open(f"debug_{nome_pagina}.html", "w", encoding="utf-8") as f:
+                            f.write(driver.page_source)
+                        logging.info(f"HTML da página salvo em debug_{nome_pagina}.html")
+                        
                         seguidores = extrair_seguidores(texto_elemento)
                         
                         if seguidores:
-                            print(f"Seguidores extraídos para {nome_pagina}: {seguidores}")
+                            logging.info(f"Seguidores extraídos para {nome_pagina}: {seguidores}")
                             novos_resultados.append({
                                 'data': data_hoje,
                                 'nome': nome_pagina,
+                                'rede': rede,
                                 'seguidores': seguidores
                             })
                         else:
-                            print(f"Não foi possível extrair número de seguidores para {nome_pagina}")
+                            logging.warning(f"Não foi possível extrair número de seguidores para {nome_pagina}")
                             # Adiciona entrada com valor nulo para manter registro
                             novos_resultados.append({
                                 'data': data_hoje,
                                 'nome': nome_pagina,
+                                'rede': rede,
                                 'seguidores': 0  # Valor padrão quando não consegue extrair
                             })
                     except Exception as e:
-                        print(f"Erro ao processar elemento: {str(e)}")
-                        print(traceback.format_exc())
+                        logging.error(f"Erro ao processar elemento: {str(e)}")
+                        logging.error(traceback.format_exc())
                         # Adiciona entrada com erro para manter registro
                         novos_resultados.append({
                             'data': data_hoje,
                             'nome': nome_pagina,
+                            'rede': rede,
                             'seguidores': 0  # Valor padrão quando há erro
                         })
                 
                 except Exception as e:
-                    print(f"Erro ao processar {nome_pagina}: {str(e)}")
-                    print(traceback.format_exc())
+                    logging.error(f"Erro ao processar {nome_pagina}: {str(e)}")
+                    logging.error(traceback.format_exc())
                 
                 # Esperar entre requisições para evitar sobrecarga
-                time.sleep(random.uniform(2, 5))
+                time.sleep(random.uniform(3, 7))  # Aumentado para evitar detecção
         
         finally:
-            print("Finalizando o WebDriver")
+            logging.info("Finalizando o WebDriver")
             driver.quit()
     
     except Exception as e:
-        print(f"Erro geral: {str(e)}")
-        print(traceback.format_exc())
+        logging.error(f"Erro geral: {str(e)}")
+        logging.error(traceback.format_exc())
     
     finally:
         # Garantir que o arquivo de resultados seja criado mesmo se não houver dados novos
         if not novos_resultados:
-            print("Nenhum novo resultado coletado")
+            logging.warning("Nenhum novo resultado coletado")
             # Adicionar um registro vazio para garantir que o arquivo seja criado
             novos_resultados.append({
                 'data': data_hoje,
                 'nome': 'sem_dados',
+                'rede': 'sem_rede',
                 'seguidores': 0
             })
         
@@ -209,11 +260,12 @@ def coletar_dados():
                 
                 if mask.any():
                     # Se já existe, atualiza o valor de seguidores
-                    print(f"Atualizando registro existente para {nova_linha['nome']} em {nova_linha['data']}")
+                    logging.info(f"Atualizando registro existente para {nova_linha['nome']} em {nova_linha['data']}")
                     resultados_df.loc[mask, 'seguidores'] = nova_linha['seguidores']
+                    resultados_df.loc[mask, 'rede'] = nova_linha['rede']  # Atualiza rede também
                 else:
                     # Se não existe, adiciona a nova linha
-                    print(f"Adicionando novo registro para {nova_linha['nome']} em {nova_linha['data']}")
+                    logging.info(f"Adicionando novo registro para {nova_linha['nome']} em {nova_linha['data']}")
                     resultados_df = pd.concat([resultados_df, pd.DataFrame([nova_linha])], ignore_index=True)
         else:
             # Se o DataFrame de resultados estiver vazio, use os novos resultados diretamente
@@ -223,19 +275,19 @@ def coletar_dados():
         resultados_df = resultados_df.sort_values(['data', 'nome'], ascending=[False, True])
         
         # Salvar resultados atualizados
-        print("Salvando resultados em resultados.xlsx")
-        resultados_df.to_excel('resultados.xlsx', index=False)
-        print(f"Dados salvos em resultados.xlsx - {len(resultados_df)} registros totais")
+        logging.info("Salvando resultados em resultados.csv")
+        resultados_df.to_csv('resultados.csv', index=False)
+        logging.info(f"Dados salvos em resultados.csv - {len(resultados_df)} registros totais")
 
 if __name__ == "__main__":
     try:
-        print("Iniciando script de coleta")
+        logging.info("Iniciando script de coleta")
         coletar_dados()
-        print("Script de coleta concluído com sucesso")
+        logging.info("Script de coleta concluído com sucesso")
     except Exception as e:
-        print(f"Erro geral no script: {str(e)}")
-        print(traceback.format_exc())
+        logging.error(f"Erro geral no script: {str(e)}")
+        logging.error(traceback.format_exc())
         # Garantir que o arquivo de resultados exista mesmo em caso de erro fatal
-        if not os.path.exists('resultados.xlsx'):
-            pd.DataFrame(columns=['data', 'nome', 'seguidores']).to_excel('resultados.xlsx', index=False)
-            print("Criado resultados.xlsx vazio devido a erro")
+        if not os.path.exists('resultados.csv'):
+            pd.DataFrame(columns=['data', 'nome', 'rede', 'seguidores']).to_csv('resultados.csv', index=False)
+            logging.info("Criado resultados.csv vazio devido a erro")
