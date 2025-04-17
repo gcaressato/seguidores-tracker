@@ -59,7 +59,6 @@ jobs:
           # Verificar se o arquivo de resultados existe
           if [ -f "resultados.xlsx" ]; then
             git add resultados.xlsx
-            git add *.png || true  # Adicionar screenshots se existirem
             git commit -m "Atualização diária de dados [$(date)]" || echo "Sem alterações para commit"
             git push
           else
