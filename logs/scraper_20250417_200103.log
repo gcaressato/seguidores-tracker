@@ -1,0 +1,33 @@
+2025-04-17 20:00:28,207 - INFO - Iniciando script de coleta
+2025-04-17 20:00:28,207 - INFO - Iniciando coleta de dados
+2025-04-17 20:00:28,207 - INFO - Diretório atual: /home/runner/work/seguidores-tracker/seguidores-tracker
+2025-04-17 20:00:28,207 - INFO - Carregando dados do arquivo config.json
+2025-04-17 20:00:28,208 - INFO - Dados carregados (após filtro): 1 registros
+2025-04-17 20:00:28,208 - INFO - Colunas: ['nome_pagina', 'rede', 'url', 'xpath']
+2025-04-17 20:00:28,208 - INFO - Carregando arquivo de resultados existente
+2025-04-17 20:00:28,210 - INFO - Resultados carregados: 3 registros
+2025-04-17 20:00:28,210 - INFO - Data de coleta: 2025-04-17
+2025-04-17 20:00:28,210 - INFO - Inicializando o WebDriver
+2025-04-17 20:00:28,210 - INFO - Configurando o ChromeDriver
+2025-04-17 20:00:28,211 - INFO - Usando resolução de tela: 1137x982
+2025-04-17 20:00:28,211 - INFO - Usando user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36
+2025-04-17 20:00:28,211 - INFO - Tentando usar o Chrome instalado no ambiente...
+2025-04-17 20:00:42,088 - INFO - Chrome inicializado com sucesso
+2025-04-17 20:00:42,088 - INFO - Processando [1/1]: Tereos, Rede: Linkedin, URL: https://www.linkedin.com/company/tereos/
+2025-04-17 20:00:44,638 - INFO - Página carregada: https://www.linkedin.com/company/tereos/ (tentativa 1)
+2025-04-17 20:00:51,108 - INFO - Tentando lidar com cookies e popups para Linkedin
+2025-04-17 20:00:51,332 - INFO - Modal de login do LinkedIn fechado
+2025-04-17 20:00:53,449 - INFO - Screenshot salvo em screenshots/Tereos_20250417_200053.png
+2025-04-17 20:00:53,449 - INFO - Buscando elemento com XPath: /html/body/main/section[1]/section/div/div[2]/div[1]/h3
+2025-04-17 20:00:53,467 - INFO - Texto encontrado: 'Moussy-le-Vieux, Île-de-France 298,809 followers'
+2025-04-17 20:00:53,467 - INFO - Texto para extração: 'Moussy-le-Vieux, Île-de-France 298,809 followers'
+2025-04-17 20:00:53,468 - INFO - Padrão alternativo encontrado: ([\d.,]+)\s+followers
+2025-04-17 20:00:53,468 - INFO - Seguidores extraídos com XPath original para Tereos: 298809
+2025-04-17 20:00:53,499 - INFO - HTML da página salvo em debug_Tereos.html
+2025-04-17 20:00:53,500 - INFO - Seguidores extraídos para Tereos: 298809
+2025-04-17 20:01:03,225 - INFO - Finalizando o WebDriver
+2025-04-17 20:01:03,292 - INFO - Removendo 3 registros antigos da data 2025-04-17
+2025-04-17 20:01:03,293 - INFO - Atualizados registros para a data 2025-04-17: foram removidos registros antigos e adicionados 1 novos
+2025-04-17 20:01:03,294 - INFO - Salvando resultados em resultados.csv
+2025-04-17 20:01:03,295 - INFO - Dados salvos em resultados.csv - 1 registros totais
+2025-04-17 20:01:03,295 - INFO - Script de coleta concluído com sucesso
