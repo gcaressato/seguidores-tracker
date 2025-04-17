@@ -17,64 +17,248 @@ from datetime import datetime
 import traceback
 
 def configurar_driver():
-    """Configura e retorna uma instância do ChromeDriver"""
+    """Configura e retorna uma instância do ChromeDriver com configurações anti-detecção"""
     options = Options()
     options.add_argument("--headless")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--window-size=1920,1080")
-    options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36")
+    
+    # Configurações adicionais para evitar detecção como bot
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    options.add_experimental_option('useAutomationExtension', False)
+    
+    # User agent de um navegador comum
+    options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36")
     
     # No GitHub Actions, use o Chrome já instalado
     try:
         print("Usando o Chrome instalado no ambiente...")
         driver = webdriver.Chrome(options=options)
+        
+        # Executar JavaScript para ocultar automação
+        driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+        
         return driver
     except Exception as e:
         print(f"Erro ao usar Chrome instalado: {str(e)}")
         print("Tentando com ChromeDriverManager...")
         service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=options)
+        
+        # Executar JavaScript para ocultar automação
+        driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+        
         return driver
 
-def extrair_seguidores(texto):
-    """Extrai o número de seguidores do texto"""
-    print(f"Texto para extração: '{texto}'")
+def extrair_seguidores(texto, rede):
+    """Extrai o número de seguidores do texto, considerando a rede social"""
+    print(f"Texto para extração ({rede}): '{texto}'")
     
-    # Pattern para encontrar números seguidos pela palavra "seguidores"
-    # Lida com formatos como "298.749 seguidores" ou "1.234 seguidores"
-    pattern = r'([\d.,]+)\s+seguidores'
-    match = re.search(pattern, texto)
+    # Remover pontos e espaços extras
+    texto = texto.strip()
     
-    if match:
-        # Remove pontos e converte para inteiro
-        seguidores = match.group(1).replace('.', '').replace(',', '')
-        return int(seguidores)
+    # Padrões específicos para cada rede social
+    padroes_por_rede = {
+        'LinkedIn': [
+            r'([\d.,]+)\s*seguidores',
+            r'([\d.,]+)\s*followers',
+            r'([\d\s.,]+)'  # Captura qualquer número
+        ],
+        'Instagram': [
+            r'([\d.,]+)\s*seguidores',
+            r'([\d.,]+)\s*followers',
+            r'([\d.,]+)K',  # Formato abreviado com K
+            r'([\d.,]+)M',  # Formato abreviado com M
+            r'([\d\s.,]+)'  # Captura qualquer número
+        ],
+        'Twitter': [
+            r'([\d.,]+)\s*seguidores',
+            r'([\d.,]+)\s*followers',
+            r'([\d.,]+)K',
+            r'([\d.,]+)M',
+            r'([\d\s.,]+)'
+        ],
+        'Facebook': [
+            r'([\d.,]+)\s*seguidores',
+            r'([\d.,]+)\s*followers',
+            r'([\d.,]+)\s*curtidas',
+            r'([\d.,]+)\s*likes',
+            r'([\d\s.,]+)'
+        ],
+        'YouTube': [
+            r'([\d.,]+)\s*inscritos',
+            r'([\d.,]+)\s*subscribers',
+            r'([\d.,]+)K',
+            r'([\d.,]+)M',
+            r'([\d\s.,]+)'
+        ]
+    }
     
-    # Tenta outros padrões comuns (followers, etc)
-    patterns = [
-        r'([\d.,]+)\s+followers',  # Inglês
-        r'([\d.,]+)\s+seguidores', # Português
-        r'([\d.,]+)\s+abonnés',    # Francês
-        r'([\d.,]+)k',             # Formato abreviado (ex: 10.5k)
-        r'([\d.,]+)\s+\w+',        # Qualquer texto após número
-        r'([\d.,]+)'               # Apenas números
-    ]
+    # Usar padrões específicos da rede se disponíveis, ou padrões genéricos
+    padroes = padroes_por_rede.get(rede, [
+        r'([\d.,]+)\s*seguidores',
+        r'([\d.,]+)\s*followers',
+        r'([\d.,]+)K',
+        r'([\d.,]+)M',
+        r'([\d\s.,]+)'
+    ])
     
-    for pattern in patterns:
-        match = re.search(pattern, texto)
+    # Tentar extrair usando os padrões
+    for pattern in padroes:
+        match = re.search(pattern, texto, re.IGNORECASE)
         if match:
-            print(f"Padrão alternativo encontrado: {pattern}")
-            seguidores_str = match.group(1).replace('.', '').replace(',', '')
+            print(f"Padrão encontrado ({pattern}): {match.group(1)}")
+            valor = match.group(1).replace('.', '').replace(',', '').replace(' ', '')
             
-            # Se for um formato abreviado (ex: 10.5k)
-            if 'k' in pattern:
-                seguidores_str = seguidores_str.replace('k', '')
-                return int(float(seguidores_str) * 1000)
-                
-            return int(seguidores_str)
+            # Se tiver K ou M no padrão (formato abreviado)
+            if 'K' in pattern:
+                return int(float(valor) * 1000)
+            elif 'M' in pattern:
+                return int(float(valor) * 1000000)
+            
+            return int(valor)
+    
+    # Tentar encontrar qualquer número no texto como último recurso
+    numeros = re.findall(r'\d+', texto)
+    if numeros:
+        print(f"Encontrado número como último recurso: {numeros[0]}")
+        return int(numeros[0])
     
     print("Nenhum padrão de seguidores encontrado no texto")
+    return None
+
+def processar_pagina(driver, url, xpath, rede):
+    """Processa uma página específica e extrai o número de seguidores"""
+    print(f"Acessando URL: {url}")
+    
+    # Limpar cookies e cache para evitar problemas de sessão
+    driver.delete_all_cookies()
+    
+    # Acessar a URL
+    driver.get(url)
+    
+    # Tempo de espera adaptativo com base na rede
+    tempos_de_espera = {
+        'LinkedIn': 10,
+        'Instagram': 15,
+        'Twitter': 8,
+        'Facebook': 12,
+        'YouTube': 8
+    }
+    tempo_espera = tempos_de_espera.get(rede, 10)
+    
+    print(f"Aguardando carregamento da página ({tempo_espera}s)")
+    time.sleep(tempo_espera)
+    
+    # Pressionar ESC para fechar possíveis popups
+    webdriver.ActionChains(driver).send_keys(Keys.ESCAPE).perform()
+    time.sleep(1)
+    
+    # Estratégias específicas por rede social
+    if rede == 'Instagram':
+        # Rolar a página para garantir carregamento dos elementos
+        driver.execute_script("window.scrollTo(0, 200)")
+        time.sleep(2)
+    
+    # Tentar diferentes estratégias de extração
+    try:
+        # 1. Tentar o XPath fornecido
+        print(f"Tentando encontrar elemento com XPath: {xpath}")
+        elemento = WebDriverWait(driver, 15).until(
+            EC.presence_of_element_located((By.XPATH, xpath))
+        )
+        texto = elemento.text
+        print(f"Texto encontrado via XPath: '{texto}'")
+        
+        seguidores = extrair_seguidores(texto, rede)
+        if seguidores:
+            return seguidores
+    except Exception as e:
+        print(f"Erro ao buscar via XPath: {str(e)}")
+    
+    # 2. Tentar XPaths alternativos específicos para cada rede
+    xpaths_alternativos = {
+        'LinkedIn': [
+            '//span[contains(@class, "follower-count")]',
+            '//span[contains(text(), "seguidores")]',
+            '//span[contains(text(), "followers")]'
+        ],
+        'Instagram': [
+            '//section/ul/li[2]/a/span',
+            '//section/ul/li[2]/span/span',
+            '//div[contains(@class, "followers")]',
+            '/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/section/main/div/header/section/ul/li[2]/a/span'
+        ],
+        'Twitter': [
+            '//span[contains(text(), "seguidores")]/span',
+            '//span[contains(text(), "followers")]/span'
+        ],
+        'Facebook': [
+            '//span[contains(text(), "seguidores")]/span',
+            '//span[contains(text(), "curtidas")]/span'
+        ],
+        'YouTube': [
+            '//yt-formatted-string[@id="subscriber-count"]'
+        ]
+    }
+    
+    for xpath_alt in xpaths_alternativos.get(rede, []):
+        try:
+            print(f"Tentando XPath alternativo: {xpath_alt}")
+            elemento = driver.find_element(By.XPATH, xpath_alt)
+            texto = elemento.text
+            print(f"Texto encontrado via XPath alternativo: '{texto}'")
+            
+            seguidores = extrair_seguidores(texto, rede)
+            if seguidores:
+                return seguidores
+        except Exception as e:
+            print(f"Erro com XPath alternativo: {str(e)}")
+    
+    # 3. Buscar no código-fonte da página
+    print("Tentando extrair do código-fonte da página")
+    page_source = driver.page_source
+    
+    # Padrões específicos para buscar no código-fonte
+    padroes_html = {
+        'LinkedIn': [
+            r'followerCount":(\d+)',
+            r'followers":(\d+)',
+            r'seguidores">([^<]+)'
+        ],
+        'Instagram': [
+            r'"edge_followed_by":{"count":(\d+)}',
+            r'"followers":(\d+)',
+            r'seguidores">([^<]+)'
+        ],
+        'Twitter': [
+            r'"followers_count":(\d+)',
+            r'seguidores">([^<]+)'
+        ],
+        'Facebook': [
+            r'"followers":(\d+)',
+            r'seguidores">([^<]+)'
+        ],
+        'YouTube': [
+            r'"subscriberCountText":{"simpleText":"([^"]+)"',
+            r'"subscriberCount":(\d+)'
+        ]
+    }
+    
+    for pattern in padroes_html.get(rede, [r'"followers":(\d+)', r'seguidores">([^<]+)']):
+        match = re.search(pattern, page_source)
+        if match:
+            print(f"Padrão encontrado no código-fonte: {pattern}")
+            texto = match.group(1)
+            print(f"Texto encontrado no código-fonte: '{texto}'")
+            
+            seguidores = extrair_seguidores(texto, rede)
+            if seguidores:
+                return seguidores
+    
+    print("Não foi possível extrair o número de seguidores após todas as tentativas")
     return None
 
 def carregar_configuracao():
@@ -215,58 +399,43 @@ def coletar_dados():
                     
                     print(f"Processando: {nome_pagina} ({rede}), URL: {url}")
                     
-                    # Acessar a URL
-                    driver.get(url)
-                    time.sleep(5)  # Aguardar carregamento
+                    # Usar a função específica para processar a página
+                    seguidores = processar_pagina(driver, url, xpath, rede)
                     
-                    # Pressionar ESC para fechar possíveis popups
-                    webdriver.ActionChains(driver).send_keys(Keys.ESCAPE).perform()
-                    time.sleep(1)
-                    
-                    try:
-                        # Encontrar o elemento usando XPath
-                        print(f"Buscando elemento com XPath: {xpath}")
-                        elemento = WebDriverWait(driver, 15).until(
-                            EC.presence_of_element_located((By.XPATH, xpath))
-                        )
-                        
-                        # Extrair o texto e buscar o número de seguidores
-                        texto_elemento = elemento.text
-                        print(f"Texto encontrado: '{texto_elemento}'")
-                        seguidores = extrair_seguidores(texto_elemento)
-                        
-                        if seguidores:
-                            print(f"Seguidores extraídos para {nome_pagina}: {seguidores}")
-                            novos_resultados.append({
-                                'data': data_hoje,
-                                'nome': nome_pagina,
-                                'rede': rede,
-                                'seguidores': seguidores
-                            })
-                        else:
-                            print(f"Não foi possível extrair número de seguidores para {nome_pagina}")
-                            # Adiciona entrada com valor nulo para manter registro
-                            novos_resultados.append({
-                                'data': data_hoje,
-                                'nome': nome_pagina,
-                                'rede': rede,
-                                'seguidores': 0  # Valor padrão quando não consegue extrair
-                            })
-                    except Exception as e:
-                        print(f"Erro ao processar elemento: {str(e)}")
-                        # Adiciona entrada com erro para manter registro
+                    if seguidores:
+                        print(f"Seguidores extraídos para {nome_pagina}: {seguidores}")
                         novos_resultados.append({
                             'data': data_hoje,
                             'nome': nome_pagina,
                             'rede': rede,
-                            'seguidores': 0  # Valor padrão quando há erro
+                            'seguidores': seguidores
+                        })
+                    else:
+                        print(f"Não foi possível extrair número de seguidores para {nome_pagina}")
+                        # Adiciona entrada com valor nulo para manter registro
+                        novos_resultados.append({
+                            'data': data_hoje,
+                            'nome': nome_pagina,
+                            'rede': rede,
+                            'seguidores': 0  # Valor padrão quando não consegue extrair
                         })
                 
                 except Exception as e:
                     print(f"Erro ao processar {nome_pagina}: {str(e)}")
+                    print(traceback.format_exc())
+                    
+                    # Adicionar ao resultado mesmo com erro
+                    novos_resultados.append({
+                        'data': data_hoje,
+                        'nome': nome_pagina,
+                        'rede': rede if 'rede' in locals() else 'Desconhecida',
+                        'seguidores': 0  # Valor padrão quando há erro
+                    })
                 
                 # Esperar entre requisições para evitar sobrecarga
-                time.sleep(random.uniform(2, 5))
+                tempo_espera = random.uniform(3, 7)  # Aumentado para evitar detecção
+                print(f"Aguardando {tempo_espera:.2f}s antes da próxima requisição")
+                time.sleep(tempo_espera)
         
         finally:
             print("Finalizando o WebDriver")
